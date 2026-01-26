@@ -1,0 +1,42 @@
+id: "reading-code"
+number: 2
+title: "Reading Code"
+module: "Meet Claude"
+
+intro: |
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  LEVEL 2: Reading Code                                       ║
+  ╚══════════════════════════════════════════════════════════════╝
+
+  Claude can read any file in your project. Let's explore the code.
+
+  👉 Ask Claude to read and explain the list_todos function
+
+  You can say something like:
+  "Read the list_todos function in todo.py and explain what it does"
+
+  ─────────────────────────────────────────────────────────────────
+
+verification:
+  - type: tool_called
+    tool_name: "Read"
+
+hints:
+  - after_minutes: 2
+    text: "💡 Hint: Ask Claude to 'read todo.py' or 'explain the list_todos function'"
+  - after_minutes: 4
+    text: "💡 Hint: You can be specific: 'read the list_todos function in todo.py'"
+
+success: |
+  ✅ Nice! You just learned how Claude gathers context.
+
+  When you ask about code, Claude uses the Read tool to look at files.
+  It can read any file in your project - code, configs, docs, anything.
+
+  Did you notice anything suspicious in list_todos? 🤔
+
+  Press ENTER for Level 3...
+
+limits:
+  max_duration_minutes: 10
+  max_claude_messages: 15

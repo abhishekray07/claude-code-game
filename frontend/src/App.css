@@ -1,0 +1,239 @@
+/* Start Screen */
+.start-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f0f1a;
+  color: #fff;
+}
+
+.start-content {
+  text-align: center;
+  max-width: 400px;
+  padding: 20px;
+}
+
+.start-content h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.start-content .subtitle {
+  color: #888;
+  margin-bottom: 2rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.input-group input {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.input-group button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  background: #6366f1;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.input-group button:hover:not(:disabled) {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.input-group button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #f87171;
+  margin-top: 1rem;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.875rem;
+  margin-top: 1.5rem;
+}
+
+.hint a {
+  color: #6366f1;
+}
+
+/* Game Screen */
+.game-screen {
+  display: flex;
+  height: 100vh;
+  background: #0f0f1a;
+}
+
+.sidebar {
+  width: 300px;
+  padding: 24px;
+  color: #fff;
+  border-right: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.level-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.module-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #333;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #888;
+  width: fit-content;
+  margin-bottom: 4px;
+}
+
+.level-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #6366f1;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.level-info h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.instructions {
+  color: #aaa;
+  line-height: 1.6;
+}
+
+.instructions .action {
+  margin-top: 16px;
+  color: #fff;
+}
+
+.instructions code {
+  background: #333;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Menlo', monospace;
+}
+
+.commands {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid #333;
+}
+
+.commands h3 {
+  color: #666;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.commands ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.commands li {
+  color: #888;
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+}
+
+.commands code {
+  color: #6366f1;
+  font-family: 'Menlo', monospace;
+}
+
+/* Level Complete */
+.level-complete {
+  margin-top: 24px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+  border: 1px solid #6366f1;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.level-complete p {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.level-complete .exit-hint {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #aaa;
+  margin-bottom: 16px;
+}
+
+.level-complete .exit-hint code {
+  background: #333;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.level-complete button {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  background: #6366f1;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.level-complete button:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+/* Terminal */
+.terminal-container {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+}
