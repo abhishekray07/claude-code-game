@@ -1,0 +1,46 @@
+id: "fix-bug"
+number: 3
+title: "Fix a Bug"
+module: "Meet Claude"
+
+intro: |
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  LEVEL 3: Fix a Bug                                          ║
+  ╚══════════════════════════════════════════════════════════════╝
+
+  There's a bug in the list_todos function. It's trying to access
+  todo['title'] but the field is actually called 'text'.
+
+  👉 Ask Claude to fix the bug
+
+  You could say:
+  "Fix the bug in list_todos - it should use 'text' not 'title'"
+
+  ─────────────────────────────────────────────────────────────────
+
+verification:
+  - type: tool_called
+    tool_name: "Edit"
+  - type: file_contains
+    path: "todo.py"
+    pattern: 'todo\["text"\]'
+
+hints:
+  - after_minutes: 2
+    text: "💡 Hint: Ask Claude to 'fix the bug in list_todos'"
+  - after_minutes: 4
+    text: "💡 Hint: The bug is on line 47 - 'title' should be 'text'"
+
+success: |
+  ✅ You fixed your first bug with Claude!
+
+  Claude used the Edit tool to modify the file. It's careful to make
+  minimal, focused changes.
+
+  But did it actually work? Let's verify...
+
+  Press ENTER for Level 4...
+
+limits:
+  max_duration_minutes: 10
+  max_claude_messages: 15
