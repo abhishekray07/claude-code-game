@@ -32,6 +32,18 @@ class LevelLimits(BaseModel):
     max_claude_messages: int = 20
 
 
+class Video(BaseModel):
+    """Video content for a level."""
+    url: str
+    duration_seconds: int
+
+
+class Exercise(BaseModel):
+    """Exercise content for a level."""
+    intro: str
+    objective: str
+
+
 class Level(BaseModel):
     """A game level definition."""
     id: str
@@ -39,6 +51,8 @@ class Level(BaseModel):
     title: str
     module: str
     intro: str
+    video: Video | None = None
+    exercise: Exercise | None = None
     verification: list[VerificationRule]
     hints: list[Hint] = []
     success: str
