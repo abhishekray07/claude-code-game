@@ -10,6 +10,8 @@ class VerificationType(str, Enum):
     FILE_EXISTS = "file_exists"
     FILE_CONTAINS = "file_contains"
     FILE_CHANGED = "file_changed"
+    COMMIT_EXISTS = "commit_exists"
+    COMMAND_OUTPUT = "command_output"
 
 
 class VerificationRule(BaseModel):
@@ -17,7 +19,9 @@ class VerificationRule(BaseModel):
     type: VerificationType
     tool_name: str | None = None  # For TOOL_CALLED
     path: str | None = None  # For FILE_* checks
-    pattern: str | None = None  # For FILE_CONTAINS
+    pattern: str | None = None  # For FILE_CONTAINS, COMMIT_EXISTS (message pattern)
+    command: str | None = None  # For COMMAND_OUTPUT
+    expected_output: str | None = None  # For COMMAND_OUTPUT (regex pattern)
 
 
 class Hint(BaseModel):
