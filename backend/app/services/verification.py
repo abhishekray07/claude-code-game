@@ -52,6 +52,10 @@ class VerificationEngine:
                 return await self._check_file_contains(rule.path, rule.pattern)
             elif rule.type == VerificationType.FILE_CHANGED:
                 return await self._check_file_changed(rule.path)
+            elif rule.type == VerificationType.COMMIT_EXISTS:
+                return await self._check_commit_exists(rule.pattern)
+            elif rule.type == VerificationType.COMMAND_OUTPUT:
+                return await self._check_command_output(rule.command, rule.expected_output)
             return False
         except Exception as e:
             logger.error(f"Error checking rule {rule.type}: {e}")
@@ -138,3 +142,32 @@ class VerificationEngine:
                         return True
 
         return False
+
+    async def _check_commit_exists(self, pattern: str | None) -> bool:
+        """Check if a git commit exists (optionally matching message pattern)."""
+        if not self.sandbox.workspace_dir:
+            return False
+
+        stdout, stderr, returncode = await self.sandbox.exec_command(
+            "git", "log", "--oneline", "-n", "10"
+        )
+        if returncode != 0:
+            return False
+
+        if pattern:
+            return bool(re.search(pattern, stdout, re.IGNORECASE))
+        return bool(stdout.strip())  # Any commit exists
+
+    async def _check_command_output(self, command: str | None, expected: str | None) -> bool:
+        """Check if command output matches expected pattern."""
+        if not command:
+            return False
+
+        import shlex
+        args = shlex.split(command)
+
+        stdout, stderr, returncode = await self.sandbox.exec_command(*args)
+
+        if expected:
+            return bool(re.search(expected, stdout + stderr))
+        return returncode == 0  # Just check success
