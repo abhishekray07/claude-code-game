@@ -237,3 +237,73 @@
   padding: 0;
   overflow: hidden;
 }
+
+/* Lesson Screen (Watch Phase) */
+.lesson-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0f0f1a;
+  color: #fff;
+  padding: 40px;
+}
+
+.lesson-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.lesson-header h1 {
+  font-size: 1.8rem;
+  margin-top: 12px;
+}
+
+.lesson-content {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.start-exercise-btn {
+  padding: 14px 32px;
+  border-radius: 8px;
+  border: none;
+  background: #6366f1;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.start-exercise-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-2px);
+}
+
+.no-video-message {
+  text-align: center;
+  color: #888;
+  padding: 40px;
+}
+
+.rewatch-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: transparent;
+  color: #888;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rewatch-btn:hover {
+  border-color: #6366f1;
+  color: #fff;
+}
