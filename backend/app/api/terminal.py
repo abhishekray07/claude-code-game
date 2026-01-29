@@ -1,14 +1,12 @@
 """WebSocket terminal endpoint with local PTY sandbox."""
 import asyncio
 import logging
-import os
-from pathlib import Path
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from pydantic import BaseModel
 
 from app.services.local_sandbox import LocalSandbox
-from app.services.levels import load_level_by_number
+from app.services.levels import load_level_by_number, get_exercise_dir
 from app.services.watcher import GameWatcher
 from app.models.level import Level
 
@@ -17,9 +15,6 @@ router = APIRouter()
 
 # Active sessions
 active_sessions: dict[str, dict] = {}
-
-# Path to starter app
-STARTER_APP_DIR = Path(__file__).parent.parent.parent.parent / "levels" / "starter-app"
 
 
 class StartSessionRequest(BaseModel):
@@ -45,8 +40,8 @@ async def create_session(request: StartSessionRequest):
         await sandbox.create()
         await sandbox.setup_credentials(request.api_key)
 
-        # Copy starter app to workspace
-        await _copy_starter_app(sandbox)
+        # Copy exercise files to workspace
+        await _copy_exercise_files(sandbox, request.level_number)
 
     except Exception as e:
         logger.error(f"Failed to create sandbox: {e}")
@@ -76,19 +71,20 @@ async def create_session(request: StartSessionRequest):
     }
 
 
-async def _copy_starter_app(sandbox: LocalSandbox):
-    """Copy starter app files to sandbox workspace."""
-    if not STARTER_APP_DIR.exists():
-        logger.warning(f"Starter app directory not found: {STARTER_APP_DIR}")
+async def _copy_exercise_files(sandbox: LocalSandbox, level_number: int):
+    """Copy exercise files to sandbox workspace."""
+    exercise_dir = get_exercise_dir(level_number)
+    if not exercise_dir:
+        logger.warning(f"No exercise directory found for level {level_number}")
         return
 
-    for file_path in STARTER_APP_DIR.glob("*"):
-        if file_path.is_file():
+    for file_path in exercise_dir.glob("*"):
+        if file_path.is_file() and sandbox.workspace_dir:
             content = file_path.read_text()
             dest_path = sandbox.workspace_dir / file_path.name
             dest_path.write_text(content)
 
-    logger.info("Starter app copied to workspace")
+    logger.info(f"Exercise files copied from {exercise_dir}")
 
 
 @router.delete("/api/sessions/{session_id}")
