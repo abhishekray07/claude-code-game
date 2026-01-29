@@ -1,0 +1,46 @@
+id: "first-bug-fix"
+number: 2
+module: "Mental Model"
+title: "Your First Bug Fix"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    The todo app has a bug - tasks show the wrong text.
+    Tell Claude to fix it and verify the fix works.
+  objective: "Have Claude fix the bug and verify it works"
+
+intro: |
+  The todo app has a bug. When you add a task, something's not right.
+
+  Watch how Claude reads the code, identifies the bug, and fixes it.
+
+  Type: claude
+
+  Then tell Claude: "There's a bug in the todo app. Can you find and fix it?"
+
+verification:
+  - type: tool_called
+    tool_name: Edit
+  - type: file_contains
+    path: todo.py
+    pattern: 'self\.text'
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Ask Claude to look at the todo app and find the bug"
+  - after_minutes: 4
+    text: "Hint: The bug is in how tasks are displayed - 'title' vs 'text'"
+
+success: |
+  Bug fixed! You saw the Read -> Edit -> Verify workflow.
+
+  Claude read the code, identified the issue (title vs text),
+  and made the fix. This is the core loop you'll use constantly.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 20

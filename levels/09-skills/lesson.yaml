@@ -1,0 +1,43 @@
+id: "skills"
+number: 9
+module: "Customization"
+title: "Custom Skills"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 420
+
+exercise:
+  intro: |
+    Create a custom skill (slash command) that Claude can use.
+    Skills live in .claude/skills/
+  objective: "Create a lint skill in .claude/skills/lint.md"
+
+intro: |
+  Skills are custom commands you define for Claude.
+
+  They live in .claude/skills/*.md and are invoked with /skillname.
+
+  Type: claude
+
+  Create a lint skill that runs code quality checks.
+
+verification:
+  - type: file_exists
+    path: .claude/skills/lint.md
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Ask Claude to create a .claude/skills/lint.md file"
+  - after_minutes: 4
+    text: "Hint: The skill should define what 'lint' means for this project"
+
+success: |
+  Skill created! Now you can type /lint anytime to run it.
+
+  Skills are powerful for repetitive workflows - deployment,
+  testing, documentation, and more.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 15

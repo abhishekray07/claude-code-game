@@ -1,0 +1,44 @@
+id: "parallel-work"
+number: 11
+module: "Advanced"
+title: "Parallel Work with Worktrees"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 420
+
+exercise:
+  intro: |
+    Learn about git worktrees for running multiple Claude sessions
+    on different branches simultaneously.
+  objective: "Understand worktrees for parallel development"
+
+intro: |
+  Want to work on multiple features at once?
+
+  Git worktrees let you have multiple working directories,
+  each on a different branch. Run Claude in each one.
+
+  Type: claude
+
+  Ask Claude to explain git worktrees and how to use them
+  for parallel development.
+
+verification:
+  - type: message_exists
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Ask Claude about git worktrees"
+  - after_minutes: 4
+    text: "Hint: Ask how to use worktrees with Claude Code"
+
+success: |
+  You've learned about parallel development!
+
+  With worktrees, you can have Claude working on multiple
+  features simultaneously, each in isolation.
+
+limits:
+  max_duration_minutes: 10
+  max_claude_messages: 10

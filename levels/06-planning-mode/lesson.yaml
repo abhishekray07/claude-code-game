@@ -1,0 +1,41 @@
+id: "planning-mode"
+number: 6
+module: "Planning"
+title: "Planning Mode"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 360
+
+exercise:
+  intro: |
+    Use planning mode to have Claude think through a feature
+    before implementing it.
+  objective: "Use /plan to create an implementation plan"
+
+intro: |
+  Big tasks need plans. Use planning mode:
+
+  Type: claude
+
+  Then use "/plan" to ask Claude to plan adding a priority
+  system (high/medium/low) to the todo app.
+
+verification:
+  - type: message_exists
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Use /plan before asking for implementation"
+  - after_minutes: 4
+    text: "Hint: After reviewing the plan, approve it to start implementation"
+
+success: |
+  Excellent! Planning mode helps you align with Claude before coding.
+
+  For complex features, always plan first. It prevents wrong turns
+  and wasted effort.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 20

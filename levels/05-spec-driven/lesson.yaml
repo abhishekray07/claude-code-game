@@ -1,0 +1,50 @@
+id: "spec-driven"
+number: 5
+module: "Planning"
+title: "Spec-Driven Development"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 420
+
+exercise:
+  intro: |
+    Write a spec document before coding. Then have Claude
+    implement the feature from your spec.
+  objective: "Create a spec.md and implement a due_date feature"
+
+intro: |
+  Better prompts = better code.
+
+  Instead of vague requests, write a spec:
+  1. Problem definition
+  2. Requirements
+  3. Implementation approach
+
+  Type: claude
+
+  First create a spec.md for adding due dates to tasks.
+  Then implement it.
+
+verification:
+  - type: file_exists
+    path: spec.md
+  - type: file_contains
+    path: todo.py
+    pattern: 'due_date'
+
+hints:
+  - after_minutes: 3
+    text: "Hint: Start by creating a spec.md file"
+  - after_minutes: 5
+    text: "Hint: Include requirements like 'tasks should have optional due dates'"
+
+success: |
+  Great work! You've learned spec-driven development.
+
+  Writing specs before coding helps Claude deliver exactly
+  what you want on the first try.
+
+limits:
+  max_duration_minutes: 20
+  max_claude_messages: 25
