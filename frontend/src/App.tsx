@@ -4,6 +4,9 @@ import { useCallback, useState } from "react";
 
 import { Terminal } from "./components/Terminal";
 import { VideoPlayer } from "./components/VideoPlayer";
+import { useProgress } from "./hooks/useProgress";
+
+const TOTAL_LESSONS = 12;
 
 interface Video {
   url: string;
@@ -38,6 +41,7 @@ function App() {
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
   const [phase, setPhase] = useState<LessonPhase>("watch");
+  const { progress, markComplete } = useProgress();
 
   const startGame = async (levelNumber: number = 1) => {
     if (!apiKey.trim()) {
@@ -73,7 +77,10 @@ function App() {
 
   const handleLevelComplete = useCallback(() => {
     setLevelComplete(true);
-  }, []);
+    if (session) {
+      markComplete(session.level.number);
+    }
+  }, [session, markComplete]);
 
   const startExercise = () => {
     setPhase("exercise");
@@ -82,7 +89,7 @@ function App() {
   const nextLevel = () => {
     if (session) {
       const nextLevelNum = session.level.number + 1;
-      if (nextLevelNum <= 12) {
+      if (nextLevelNum <= TOTAL_LESSONS) {
         startGame(nextLevelNum);
       } else {
         // Course complete!
@@ -130,6 +137,21 @@ function App() {
               Get one here
             </a>
           </p>
+
+          <div className="progress-indicator">
+            <span>
+              {progress.completedLessons.length} of {TOTAL_LESSONS} lessons
+              complete
+            </span>
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${(progress.completedLessons.length / TOTAL_LESSONS) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -245,7 +267,7 @@ function App() {
             <p className="exit-hint">
               Press <code>Esc</code> twice to exit Claude
             </p>
-            {session.level.number < 12 ? (
+            {session.level.number < TOTAL_LESSONS ? (
               <button onClick={nextLevel}>Next Lesson →</button>
             ) : (
               <button onClick={() => setSession(null)}>
