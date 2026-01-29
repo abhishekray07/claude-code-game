@@ -1,0 +1,45 @@
+id: "monitor-manage"
+number: 4
+module: "Working Flow"
+title: "Monitor and Manage"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    Practice using Esc to interrupt Claude and give new directions.
+    Learn to steer Claude while it works.
+  objective: "Interrupt Claude with Esc and redirect it"
+
+intro: |
+  Claude isn't a fire-and-forget tool. You stay engaged:
+
+  - Esc once: pause and give feedback
+  - Esc twice: exit Claude
+
+  You're the manager. Claude is your skilled employee.
+
+  Type: claude
+
+  Start a task, then practice pressing Esc to steer.
+
+verification:
+  - type: message_exists
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Start Claude on any task, then press Esc once to pause"
+  - after_minutes: 4
+    text: "Hint: Try asking Claude to do something, then interrupt and change direction"
+
+success: |
+  Well done! You've learned to monitor and manage Claude.
+
+  Remember: You're the decision maker. Claude executes.
+  Stay engaged and steer as needed.
+
+limits:
+  max_duration_minutes: 10
+  max_claude_messages: 15

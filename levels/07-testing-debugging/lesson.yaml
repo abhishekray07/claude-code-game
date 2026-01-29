@@ -1,0 +1,42 @@
+id: "testing-debugging"
+number: 7
+module: "Quality"
+title: "Testing & Debugging"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 420
+
+exercise:
+  intro: |
+    Run the existing tests, then have Claude fix any failures.
+    Add a new test for a feature.
+  objective: "Run pytest and ensure all tests pass"
+
+intro: |
+  Claude can run tests and fix failures automatically.
+
+  Type: claude
+
+  Ask Claude to run the tests and fix any issues it finds.
+
+verification:
+  - type: command_output
+    command: "pytest -v"
+    expected_output: "passed"
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Ask Claude to run pytest"
+  - after_minutes: 4
+    text: "Hint: If tests fail, Claude will usually fix them automatically"
+
+success: |
+  All tests passing! You've learned to use Claude for testing.
+
+  Claude can write tests, run them, and fix failures in a loop
+  until everything works.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 20

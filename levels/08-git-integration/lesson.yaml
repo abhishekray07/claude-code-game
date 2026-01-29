@@ -1,0 +1,44 @@
+id: "git-integration"
+number: 8
+module: "Workflow"
+title: "Git Integration"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 360
+
+exercise:
+  intro: |
+    Have Claude create a commit with a good commit message.
+    Practice the git workflow.
+  objective: "Create a git commit using Claude"
+
+intro: |
+  Claude handles git operations seamlessly.
+
+  First initialize git, then have Claude commit your changes
+  with a meaningful commit message.
+
+  Type: claude
+
+  Ask Claude to initialize git and commit the todo app.
+
+verification:
+  - type: commit_exists
+    pattern: ".*"
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Ask Claude to initialize a git repo and commit"
+  - after_minutes: 4
+    text: "Hint: Claude can write good commit messages automatically"
+
+success: |
+  Commit created! Claude writes conventional commit messages
+  and handles the git workflow for you.
+
+  You can also ask it to create branches, PRs, and more.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 15

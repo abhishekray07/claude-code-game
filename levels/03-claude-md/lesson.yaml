@@ -1,0 +1,47 @@
+id: "claude-md"
+number: 3
+module: "Project Setup"
+title: "CLAUDE.md - Your Project Guide"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 360
+
+exercise:
+  intro: |
+    Create a CLAUDE.md file that teaches Claude about your project.
+    Include coding conventions and project structure.
+  objective: "Create a CLAUDE.md file with project instructions"
+
+intro: |
+  CLAUDE.md is how you teach Claude about your project.
+
+  Think of it as onboarding documentation - coding style, conventions,
+  important commands, things Claude should know.
+
+  Type: claude
+
+  Then ask Claude to create a CLAUDE.md file for this project.
+
+verification:
+  - type: file_exists
+    path: CLAUDE.md
+  - type: file_contains
+    path: CLAUDE.md
+    pattern: '(style|convention|standard)'
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Ask Claude to create a CLAUDE.md file"
+  - after_minutes: 4
+    text: "Hint: Include coding conventions, project structure, and commands"
+
+success: |
+  Excellent! You've created your first CLAUDE.md file.
+
+  This file persists across sessions, so Claude will remember these
+  instructions every time you work on this project.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 15

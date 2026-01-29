@@ -1,0 +1,46 @@
+id: "mcp-servers"
+number: 10
+module: "Integration"
+title: "MCP Servers"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 480
+
+exercise:
+  intro: |
+    Learn about MCP (Model Context Protocol) servers.
+    These extend Claude's capabilities with external tools.
+  objective: "Understand MCP servers and their configuration"
+
+intro: |
+  MCP servers extend Claude Code's capabilities.
+
+  They can provide:
+  - Database access
+  - API integrations
+  - Custom tools
+  - External data sources
+
+  Type: claude
+
+  Ask Claude to explain how MCP servers work and list common ones.
+
+verification:
+  - type: message_exists
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Ask Claude about MCP servers"
+  - after_minutes: 4
+    text: "Hint: Try asking what MCP servers are commonly used"
+
+success: |
+  Great! MCP servers are how you extend Claude Code.
+
+  Popular ones include GitHub, Slack, databases, and more.
+  Check the MCP documentation for the full list.
+
+limits:
+  max_duration_minutes: 10
+  max_claude_messages: 10

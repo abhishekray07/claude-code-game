@@ -1,0 +1,49 @@
+id: "hooks-safety"
+number: 12
+module: "Advanced"
+title: "Hooks & Safety"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 480
+
+exercise:
+  intro: |
+    Learn about Claude Code hooks for automating workflows
+    and safety controls for production use.
+  objective: "Understand hooks and safety configurations"
+
+intro: |
+  Claude Code has powerful automation through hooks:
+
+  - Pre/post tool hooks
+  - Notification hooks
+  - Safety controls
+
+  Type: claude
+
+  Ask Claude to explain hooks and safety settings
+  like permission modes.
+
+verification:
+  - type: message_exists
+
+hints:
+  - after_minutes: 2
+    text: "Hint: Ask Claude about hooks in Claude Code"
+  - after_minutes: 4
+    text: "Hint: Ask about safety settings and permission modes"
+
+success: |
+  Congratulations! You've completed the Claude Code course!
+
+  You now understand:
+  - The mental model (context, steering, specs)
+  - Core workflows (read, edit, test, commit)
+  - Advanced features (skills, MCP, worktrees, hooks)
+
+  Go build something amazing!
+
+limits:
+  max_duration_minutes: 10
+  max_claude_messages: 10
