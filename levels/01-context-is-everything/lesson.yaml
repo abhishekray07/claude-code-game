@@ -1,0 +1,44 @@
+id: "context-is-everything"
+number: 1
+module: "Mental Model"
+title: "Context is Everything"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 240
+
+exercise:
+  intro: |
+    Now try it yourself. You have a simple todo app in front of you.
+    Ask Claude to explain what it does.
+  objective: "Have a conversation with Claude about the codebase"
+
+intro: |
+  Welcome! You're about to meet Claude Code, an AI coding assistant
+  that lives in your terminal.
+
+  In front of you is a simple todo app. Let's have Claude help us
+  understand the code.
+
+  Type: claude
+
+  Then ask Claude to explain what this app does.
+
+verification:
+  - type: message_exists
+
+hints:
+  - after_minutes: 1
+    text: "Hint: Just type 'claude' and press Enter to start!"
+  - after_minutes: 3
+    text: "Hint: Try asking Claude 'what does this todo app do?'"
+
+success: |
+  Great! You just had your first conversation with Claude Code.
+
+  Notice how Claude read the files to understand the code before responding.
+  That's context in action!
+
+limits:
+  max_duration_minutes: 10
+  max_claude_messages: 10
