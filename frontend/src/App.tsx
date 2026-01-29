@@ -3,6 +3,7 @@ import "./App.css";
 import { useCallback, useState } from "react";
 
 import { Terminal } from "./components/Terminal";
+import { VideoPlayer } from "./components/VideoPlayer";
 
 interface Video {
   url: string;
@@ -28,12 +29,15 @@ interface Session {
   level: Level;
 }
 
+type LessonPhase = "watch" | "exercise";
+
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
+  const [phase, setPhase] = useState<LessonPhase>("watch");
 
   const startGame = async (levelNumber: number = 1) => {
     if (!apiKey.trim()) {
@@ -44,6 +48,7 @@ function App() {
     setLoading(true);
     setError("");
     setLevelComplete(false);
+    setPhase("watch");
 
     try {
       const response = await fetch("http://localhost:8080/api/sessions", {
@@ -70,13 +75,17 @@ function App() {
     setLevelComplete(true);
   }, []);
 
+  const startExercise = () => {
+    setPhase("exercise");
+  };
+
   const nextLevel = () => {
     if (session) {
       const nextLevelNum = session.level.number + 1;
-      if (nextLevelNum <= 4) {
+      if (nextLevelNum <= 12) {
         startGame(nextLevelNum);
       } else {
-        // Game complete!
+        // Course complete!
         setSession(null);
         setLevelComplete(false);
       }
@@ -126,33 +135,81 @@ function App() {
     );
   }
 
-  // Game screen
+  // Watch Phase
+  if (phase === "watch") {
+    const hasVideo = session.level.video?.url;
+
+    return (
+      <div className="lesson-screen">
+        <div className="lesson-header">
+          <span className="module-badge">{session.level.module}</span>
+          <h1>
+            Lesson {session.level.number}: {session.level.title}
+          </h1>
+        </div>
+
+        <div className="lesson-content">
+          {hasVideo ? (
+            <>
+              <VideoPlayer url={session.level.video!.url} onEnded={() => {}} />
+              <button className="start-exercise-btn" onClick={startExercise}>
+                Start Exercise →
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="no-video-message">
+                <p>This lesson doesn't have a video yet.</p>
+                <p>Proceed directly to the exercise.</p>
+              </div>
+              <button className="start-exercise-btn" onClick={startExercise}>
+                Start Exercise →
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Exercise Phase (Game screen)
   return (
     <div className="game-screen">
       {/* Sidebar */}
       <div className="sidebar">
         <div className="level-info">
           <span className="module-badge">{session.level.module}</span>
-          <span className="level-badge">Level {session.level.number}</span>
+          <span className="level-badge">Lesson {session.level.number}</span>
           <h2>{session.level.title}</h2>
         </div>
 
         <div className="instructions">
           {!levelComplete ? (
             <>
-              <p>
-                Claude Code is an AI coding assistant that lives in your
-                terminal.
-              </p>
-              <p className="action">
-                👉 Type <code>claude</code> to start
-              </p>
+              {session.level.exercise ? (
+                <>
+                  <p>{session.level.exercise.intro}</p>
+                  <p className="action">
+                    <strong>Objective:</strong> {session.level.exercise.objective}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    Claude Code is an AI coding assistant that lives in your
+                    terminal.
+                  </p>
+                  <p className="action">
+                    👉 Type <code>claude</code> to start
+                  </p>
+                </>
+              )}
             </>
           ) : (
             <>
-              <p>Nice work! You've completed this level's objective.</p>
+              <p>Nice work! You've completed this lesson's objective.</p>
               <p className="action">
-                👉 Click <strong>Next Level</strong> below to continue
+                👉 Click <strong>Next Lesson</strong> below to continue
               </p>
             </>
           )}
@@ -165,7 +222,7 @@ function App() {
               <code>/hint</code> - Get a hint
             </li>
             <li>
-              <code>/skip</code> - Skip this level
+              <code>/skip</code> - Skip this lesson
             </li>
             <li>
               <code>/objective</code> - Show objective
@@ -176,17 +233,23 @@ function App() {
           </ul>
         </div>
 
+        {session.level.video && (
+          <button className="rewatch-btn" onClick={() => setPhase("watch")}>
+            ↺ Rewatch Video
+          </button>
+        )}
+
         {levelComplete && (
           <div className="level-complete">
-            <p>🎉 Level Complete!</p>
+            <p>🎉 Lesson Complete!</p>
             <p className="exit-hint">
               Press <code>Esc</code> twice to exit Claude
             </p>
-            {session.level.number < 4 ? (
-              <button onClick={nextLevel}>Next Level →</button>
+            {session.level.number < 12 ? (
+              <button onClick={nextLevel}>Next Lesson →</button>
             ) : (
               <button onClick={() => setSession(null)}>
-                🏆 Game Complete!
+                🏆 Course Complete!
               </button>
             )}
           </div>
