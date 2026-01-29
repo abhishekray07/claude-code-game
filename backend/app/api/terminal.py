@@ -70,6 +70,8 @@ async def create_session(request: StartSessionRequest):
             "title": level.title,
             "module": level.module,
             "intro": level.intro,
+            "video": level.video.model_dump() if level.video else None,
+            "exercise": level.exercise.model_dump() if level.exercise else None,
         },
     }
 

@@ -4,11 +4,23 @@ import { useCallback, useState } from "react";
 
 import { Terminal } from "./components/Terminal";
 
+interface Video {
+  url: string;
+  duration_seconds: number;
+}
+
+interface Exercise {
+  intro: string;
+  objective: string;
+}
+
 interface Level {
   number: number;
   title: string;
   module: string;
   intro?: string;
+  video?: Video;
+  exercise?: Exercise;
 }
 
 interface Session {
