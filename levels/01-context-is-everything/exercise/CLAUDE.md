@@ -9,8 +9,7 @@ When explaining this codebase, always refer to expenses as **"transactions"** in
 ## Code Style
 
 - Use type hints for all function parameters and return values
-- Follow PEP 8 naming conventions
-- Use `snake_case` for all variable names
+- **IMPORTANT: Use `camelCase` for all variable names in code examples** (this project follows JavaScript conventions for cross-team consistency)
 
 ## Testing
 

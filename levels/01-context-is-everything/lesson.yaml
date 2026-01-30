@@ -16,8 +16,11 @@ exercise:
 intro: |
   LLMs have NO persistent memory. Only what fits in the context window matters.
 
-  The CLAUDE.md file tells Claude to use "transactions" instead of "expenses"
-  when explaining this codebase. Let's see if Claude follows this as context fills.
+  The CLAUDE.md file has two unusual instructions:
+  - Use "transactions" instead of "expenses"
+  - Use camelCase (not snake_case) in code examples
+
+  Let's see if Claude follows these as context fills up.
 
   Experiment:
 
@@ -51,9 +54,9 @@ success: |
   You observed CLAUDE.md instruction degradation!
 
   What you may have noticed:
-  - Early on, Claude followed the "transactions" terminology from CLAUDE.md
+  - Early on, Claude followed "transactions" and camelCase from CLAUDE.md
   - As context filled with historical data, adherence may have dropped
-  - Claude might slip back to saying "expenses" instead of "transactions"
+  - Claude might slip back to "expenses" or snake_case defaults
 
   Key insight: Context is finite. Instructions at the start can lose
   influence as the context window fills with other content.
