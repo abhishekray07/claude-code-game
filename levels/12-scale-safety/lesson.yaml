@@ -1,49 +1,55 @@
-id: "hooks-safety"
+id: "scale-safety"
 number: 12
-module: "Advanced"
-title: "Hooks & Safety"
+module: "Scale & Safety"
+title: "Parallel Work, Git & Safety"
 
 video:
   url: "https://vimeo.com/placeholder"
-  duration_seconds: 480
+  duration_seconds: 360
 
 exercise:
   intro: |
-    Learn about Claude Code hooks for automating workflows
-    and safety controls for production use.
-  objective: "Understand hooks and safety configurations"
+    Set up safety hooks and practice git worktrees for parallel development.
+  objective: "Configure safety guardrails and practice parallel workflows"
 
 intro: |
-  Claude Code has powerful automation through hooks:
+  The final lesson: Scale safely.
 
-  - Pre/post tool hooks
-  - Notification hooks
-  - Safety controls
+  1. Add safety hooks to block dangerous commands
+  2. Create a git worktree for parallel work
+  3. Practice /rewind to undo mistakes
 
   Type: claude
 
-  Ask Claude to explain hooks and safety settings
-  like permission modes.
+  Say: "Create a .claude/settings.json with hooks that block 'rm -rf'
+  and require confirmation for 'git push --force'"
 
 verification:
-  - type: message_exists
+  - type: file_exists
+    path: .claude/settings.json
+  - type: file_contains
+    path: .claude/settings.json
+    pattern: "(hooks|block|rm -rf)"
 
 hints:
   - after_minutes: 2
-    text: "Hint: Ask Claude about hooks in Claude Code"
-  - after_minutes: 4
-    text: "Hint: Ask about safety settings and permission modes"
+    text: "Ask Claude to create safety hooks in .claude/settings.json"
+  - after_minutes: 5
+    text: "Try: git worktree add ../feature-branch feature/csv-export"
 
 success: |
   Congratulations! You've completed the Claude Code course!
 
-  You now understand:
-  - The mental model (context, steering, specs)
-  - Core workflows (read, edit, test, commit)
-  - Advanced features (skills, MCP, worktrees, hooks)
+  You learned:
+  1. Context management (CLAUDE.md, sub-agents)
+  2. Core loop (Read → Edit → Verify)
+  3. Planning (specs, plan mode)
+  4. Building blocks (commands, skills)
+  5. Workflows (search, review)
+  6. Scale & safety (worktrees, hooks)
 
-  Go build something amazing!
+  Now go build something amazing!
 
 limits:
-  max_duration_minutes: 10
-  max_claude_messages: 10
+  max_duration_minutes: 20
+  max_claude_messages: 25
