@@ -9,43 +9,62 @@ video:
 
 exercise:
   intro: |
-    Prove that Claude has no memory with the Secret Phrase Experiment.
-    Give Claude a phrase, fill the context, then test recall.
-  objective: "Experience context limits firsthand"
+    Prove that CLAUDE.md instructions get "forgotten" when context fills up.
+    Watch Claude follow rules at first, then lose them as you load data.
+  objective: "Experience context limits through CLAUDE.md instruction degradation"
 
 intro: |
-  LLMs have NO memory. Only what's in the context window matters.
+  LLMs have NO persistent memory. Only what fits in the context window matters.
+
+  When the context fills up, early instructions (like CLAUDE.md) can get
+  "lost in the middle" - Claude literally stops following them.
 
   Let's prove it with an experiment:
 
-  1. Tell Claude a secret phrase: PURPLE_ELEPHANT_42
-  2. Ask Claude to read every file in the project
-  3. Ask Claude to recall the phrase
+  1. Open the exercise folder: cd levels/01-context-is-everything/exercise
+  2. Start Claude: claude
+  3. Ask: "What does this project do?"
+  4. Notice Claude ends with [EXPENSE_TRACKER_ACTIVE] (from .claude/CLAUDE.md)
+  5. Now say: "Read all the expense files in historical_data/ and give me a
+     complete year-by-year breakdown of spending trends. Read every file."
+  6. Claude will read 58 monthly JSON files (~150k tokens of data)
+  7. After it finishes, ask: "What's the most common expense category?"
+  8. Check: Is the [EXPENSE_TRACKER_ACTIVE] tag still there?
 
-  Type: claude
-
-  Then say: "Remember this secret phrase for later: PURPLE_ELEPHANT_42.
-  I'll ask about it at the end. Now, what does this expense tracker do?"
+  The CLAUDE.md instruction got pushed out of Claude's "attention window."
 
 verification:
   - type: message_exists
   - type: tool_called
     tool_name: Read
+  - type: file_read
+    path: historical_data/
 
 hints:
   - after_minutes: 2
-    text: "Start with: 'Remember this secret phrase: PURPLE_ELEPHANT_42'"
+    text: "First ask 'What does this project do?' - look for [EXPENSE_TRACKER_ACTIVE] at the end"
   - after_minutes: 5
-    text: "Ask Claude to read ALL Python files, then ask for the secret phrase"
+    text: "Ask Claude to read ALL 58 files in historical_data/ and summarize spending by year"
+  - after_minutes: 10
+    text: "Once Claude finishes reading, ask any follow-up question and check if the tag is still there"
 
 success: |
-  You experienced context limits!
+  You witnessed CLAUDE.md instruction degradation!
 
-  If Claude struggled to recall the phrase after reading many files,
-  you witnessed "lost in the middle" - early context gets buried.
+  What happened:
+  - At first, Claude followed the CLAUDE.md instruction (included the tag)
+  - After reading ~150k tokens of expense data, the context filled up
+  - The CLAUDE.md instruction got pushed to the "middle" of context
+  - Claude's attention shifted away from those early instructions
 
-  Key insight: Context is finite. Manage it intentionally.
+  Key insight: Context is finite. Instructions at the start can be
+  "forgotten" when the middle fills with data. This is why:
+
+  1. Keep CLAUDE.md concise - essential rules only
+  2. Repeat critical instructions if context gets large
+  3. Use /compact or /clear to reset when context bloats
+  4. Structure prompts so key info isn't buried in the middle
 
 limits:
-  max_duration_minutes: 15
-  max_claude_messages: 25
+  max_duration_minutes: 20
+  max_claude_messages: 30
