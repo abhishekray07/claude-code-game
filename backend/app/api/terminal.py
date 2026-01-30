@@ -73,16 +73,23 @@ async def create_session(request: StartSessionRequest):
 
 async def _copy_exercise_files(sandbox: LocalSandbox, level_number: int):
     """Copy exercise files to sandbox workspace."""
+    import shutil
+
     exercise_dir = get_exercise_dir(level_number)
     if not exercise_dir:
         logger.warning(f"No exercise directory found for level {level_number}")
         return
 
-    for file_path in exercise_dir.glob("*"):
-        if file_path.is_file() and sandbox.workspace_dir:
-            content = file_path.read_text()
-            dest_path = sandbox.workspace_dir / file_path.name
-            dest_path.write_text(content)
+    if not sandbox.workspace_dir:
+        return
+
+    # Copy all files and directories recursively
+    for item in exercise_dir.iterdir():
+        dest = sandbox.workspace_dir / item.name
+        if item.is_file():
+            shutil.copy2(item, dest)
+        elif item.is_dir():
+            shutil.copytree(item, dest)
 
     logger.info(f"Exercise files copied from {exercise_dir}")
 
