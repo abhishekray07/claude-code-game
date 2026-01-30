@@ -27,7 +27,7 @@ verification:
     tool_name: Edit
   - type: file_contains
     path: todo.py
-    pattern: 'self\.text'
+    pattern: 'print\(f.*text'
 
 hints:
   - after_minutes: 2
