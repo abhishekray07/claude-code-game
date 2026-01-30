@@ -5,45 +5,55 @@ title: "Spec-Driven Development"
 
 video:
   url: "https://vimeo.com/placeholder"
-  duration_seconds: 420
+  duration_seconds: 300
 
 exercise:
   intro: |
-    Write a spec document before coding. Then have Claude
-    implement the feature from your spec.
-  objective: "Create a spec.md and implement a due_date feature"
+    Write a spec for recurring expenses, then have Claude implement it.
+  objective: "Create a spec and implement recurring expenses feature"
 
 intro: |
-  Better prompts = better code.
+  Better specs = better code. Write the spec first!
 
-  Instead of vague requests, write a spec:
-  1. Problem definition
-  2. Requirements
-  3. Implementation approach
+  You want to add recurring expenses (monthly bills like rent, subscriptions).
+
+  Create a spec file first:
+    specs/recurring-expenses.md
+
+  Include:
+  - Problem: Why do we need this?
+  - Requirements: What must it do?
+  - Implementation: How should it work?
 
   Type: claude
 
-  First create a spec.md for adding due dates to tasks.
-  Then implement it.
+  Say: "I want to add recurring expenses. Help me write a spec first,
+  then implement it."
 
 verification:
   - type: file_exists
-    path: spec.md
+    path: specs/recurring-expenses.md
   - type: file_contains
-    path: todo.py
-    pattern: 'due_date'
+    path: specs/recurring-expenses.md
+    pattern: "(requirement|problem|implement)"
+  - type: file_contains
+    path: models.py
+    pattern: "(recurring|frequency)"
 
 hints:
-  - after_minutes: 3
-    text: "Hint: Start by creating a spec.md file"
+  - after_minutes: 2
+    text: "Ask Claude to help write a spec in specs/recurring-expenses.md"
   - after_minutes: 5
-    text: "Hint: Include requirements like 'tasks should have optional due dates'"
+    text: "After spec is written, ask Claude to implement it"
 
 success: |
-  Great work! You've learned spec-driven development.
+  You practiced spec-driven development!
 
-  Writing specs before coding helps Claude deliver exactly
-  what you want on the first try.
+  1. Wrote the spec first (requirements, approach)
+  2. Reviewed the spec before implementing
+  3. Claude implemented to spec
+
+  Specs eliminate ambiguity and improve results.
 
 limits:
   max_duration_minutes: 20
