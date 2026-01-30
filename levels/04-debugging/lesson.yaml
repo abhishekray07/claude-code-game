@@ -1,7 +1,7 @@
-id: "monitor-manage"
+id: "debugging"
 number: 4
-module: "Working Flow"
-title: "Monitor and Manage"
+module: "Core Loop"
+title: "Debugging with Claude"
 
 video:
   url: "https://vimeo.com/placeholder"
@@ -9,37 +9,47 @@ video:
 
 exercise:
   intro: |
-    Practice using Esc to interrupt Claude and give new directions.
-    Learn to steer Claude while it works.
-  objective: "Interrupt Claude with Esc and redirect it"
+    Run pytest, see failures, share with Claude, let it investigate and fix.
+  objective: "Fix the case-sensitivity bug using Claude's debugging workflow"
 
 intro: |
-  Claude isn't a fire-and-forget tool. You stay engaged:
+  Debugging workflow: Share error → Investigate → Fix → Verify
 
-  - Esc once: pause and give feedback
-  - Esc twice: exit Claude
+  Run the tests:
+    pytest tests/test_models.py -v
 
-  You're the manager. Claude is your skilled employee.
+  You'll see a failure about case-insensitive filtering.
+  "Food" doesn't match "food" - but it should!
 
   Type: claude
 
-  Start a task, then practice pressing Esc to steer.
+  Copy the test failure and say: "This test is failing. Can you investigate and fix it?"
 
 verification:
-  - type: message_exists
+  - type: file_contains
+    path: models.py
+    pattern: "\\.lower\\(\\)"
+  - type: command_output
+    command: "pytest tests/test_models.py::TestListExpenses::test_list_by_category_case_insensitive -v"
+    expected_output: "(PASSED|passed)"
 
 hints:
   - after_minutes: 2
-    text: "Hint: Start Claude on any task, then press Esc once to pause"
+    text: "Run pytest and share the failure output with Claude"
   - after_minutes: 4
-    text: "Hint: Try asking Claude to do something, then interrupt and change direction"
+    text: "The fix needs .lower() for case-insensitive comparison"
 
 success: |
-  Well done! You've learned to monitor and manage Claude.
+  Bug fixed! Category filtering is now case-insensitive.
 
-  Remember: You're the decision maker. Claude executes.
-  Stay engaged and steer as needed.
+  Debugging workflow:
+  1. Run tests → see failure
+  2. Share error with Claude
+  3. Claude reads code, proposes fix
+  4. Verify fix with tests
+
+  All tests should pass now: pytest tests/test_models.py -v
 
 limits:
-  max_duration_minutes: 10
-  max_claude_messages: 15
+  max_duration_minutes: 15
+  max_claude_messages: 20
