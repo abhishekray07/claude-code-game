@@ -1,43 +1,55 @@
 id: "skills"
 number: 9
-module: "Customization"
-title: "Custom Skills"
+module: "Building Blocks"
+title: "Skills (Auto-Activating Commands)"
 
 video:
   url: "https://vimeo.com/placeholder"
-  duration_seconds: 420
+  duration_seconds: 300
 
 exercise:
   intro: |
-    Create a custom skill (slash command) that Claude can use.
-    Skills live in .claude/skills/
-  objective: "Create a lint skill in .claude/skills/lint.md"
+    Create skills that activate automatically based on context.
+  objective: "Create lint and test-after-edit skills"
 
 intro: |
-  Skills are custom commands you define for Claude.
+  Skills are in .claude/skills/*.md
+  They auto-activate when relevant (no /command needed).
 
-  They live in .claude/skills/*.md and are invoked with /skillname.
+  Commands = manual (/command-name)
+  Skills = automatic (triggered by context)
+
+  Create two skills:
+  1. lint.md - Suggest running ruff after Python edits
+  2. test-after-edit.md - Suggest running tests after code changes
 
   Type: claude
 
-  Create a lint skill that runs code quality checks.
+  Say: "Create a lint skill in .claude/skills/lint.md that suggests
+  running ruff check after Python files are edited"
 
 verification:
   - type: file_exists
     path: .claude/skills/lint.md
+  - type: file_exists
+    path: .claude/skills/test-after-edit.md
 
 hints:
   - after_minutes: 2
-    text: "Hint: Ask Claude to create a .claude/skills/lint.md file"
-  - after_minutes: 4
-    text: "Hint: The skill should define what 'lint' means for this project"
+    text: "Ask Claude to create .claude/skills/lint.md"
+  - after_minutes: 5
+    text: "Skills have a YAML frontmatter with triggers"
 
 success: |
-  Skill created! Now you can type /lint anytime to run it.
+  You created auto-activating skills!
 
-  Skills are powerful for repetitive workflows - deployment,
-  testing, documentation, and more.
+  Edit a Python file and see if the skill activates.
+
+  Skills = automatic
+  Commands = manual
+
+  Choose based on workflow.
 
 limits:
   max_duration_minutes: 15
-  max_claude_messages: 15
+  max_claude_messages: 20
