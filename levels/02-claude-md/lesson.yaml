@@ -1,46 +1,54 @@
-id: "first-bug-fix"
+id: "claude-md"
 number: 2
 module: "Mental Model"
-title: "Your First Bug Fix"
+title: "CLAUDE.md - Your Project's Memory"
 
 video:
   url: "https://vimeo.com/placeholder"
-  duration_seconds: 300
+  duration_seconds: 240
 
 exercise:
   intro: |
-    The todo app has a bug - tasks show the wrong text.
-    Tell Claude to fix it and verify the fix works.
-  objective: "Have Claude fix the bug and verify it works"
+    Claude doesn't know your project conventions.
+    Create a CLAUDE.md file to give it persistent memory.
+  objective: "Create a CLAUDE.md file with project context"
 
 intro: |
-  The todo app has a bug. When you add a task, something's not right.
+  CLAUDE.md is read at the start of every session.
 
-  Watch how Claude reads the code, identifies the bug, and fixes it.
+  It's high-leverage: one line here affects every interaction.
+
+  This project has no CLAUDE.md. Create one with:
+  - Project description (1-2 sentences)
+  - How to run: python main.py
+  - How to test: pytest
+  - Code style preferences
 
   Type: claude
 
-  Then tell Claude: "There's a bug in the todo app. Can you find and fix it?"
+  Say: "Create a CLAUDE.md file for this expense tracker project"
 
 verification:
-  - type: tool_called
-    tool_name: Edit
+  - type: file_exists
+    path: CLAUDE.md
   - type: file_contains
-    path: todo.py
-    pattern: 'print\(f.*text'
+    path: CLAUDE.md
+    pattern: "(pytest|python|expense)"
 
 hints:
   - after_minutes: 2
-    text: "Hint: Ask Claude to look at the todo app and find the bug"
+    text: "Ask Claude: 'Create a CLAUDE.md for this project'"
   - after_minutes: 4
-    text: "Hint: The bug is in how tasks are displayed - 'title' vs 'text'"
+    text: "Include: how to run, how to test, code style"
 
 success: |
-  Bug fixed! You saw the Read -> Edit -> Verify workflow.
+  Your project now has persistent memory!
 
-  Claude read the code, identified the issue (title vs text),
-  and made the fix. This is the core loop you'll use constantly.
+  Start a new Claude session and it will automatically know
+  about the expense tracker without you explaining anything.
+
+  CLAUDE.md is high-leverage context.
 
 limits:
-  max_duration_minutes: 15
-  max_claude_messages: 20
+  max_duration_minutes: 10
+  max_claude_messages: 15
