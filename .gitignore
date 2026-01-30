@@ -33,3 +33,4 @@ htmlcov/
 # Build outputs
 *.egg
 *.whl
+.env.local
