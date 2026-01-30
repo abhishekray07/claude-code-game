@@ -122,6 +122,7 @@ def _parse_level(data: dict) -> Level:
         verification_rules.append(VerificationRule(
             type=VerificationType(rule["type"]),
             tool_name=rule.get("tool_name"),
+            min_count=rule.get("min_count"),
             path=rule.get("path"),
             pattern=rule.get("pattern"),
             command=rule.get("command"),

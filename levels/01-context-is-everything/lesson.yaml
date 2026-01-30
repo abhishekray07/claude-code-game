@@ -37,6 +37,7 @@ verification:
   - type: message_exists
   - type: tool_called
     tool_name: Read
+    min_count: 20  # Require reading many files to fill context
 
 hints:
   - after_minutes: 2
