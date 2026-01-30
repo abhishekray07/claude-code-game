@@ -36,7 +36,7 @@ type LessonPhase = "watch" | "exercise";
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_ANTHROPIC_API_KEY || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
