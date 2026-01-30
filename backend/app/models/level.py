@@ -18,6 +18,7 @@ class VerificationRule(BaseModel):
     """A single verification rule."""
     type: VerificationType
     tool_name: str | None = None  # For TOOL_CALLED
+    min_count: int | None = None  # For TOOL_CALLED - require at least N calls
     path: str | None = None  # For FILE_* checks
     pattern: str | None = None  # For FILE_CONTAINS, COMMIT_EXISTS (message pattern)
     command: str | None = None  # For COMMAND_OUTPUT

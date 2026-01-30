@@ -45,7 +45,7 @@ class VerificationEngine:
             if rule.type == VerificationType.MESSAGE_EXISTS:
                 return await self._check_message_exists()
             elif rule.type == VerificationType.TOOL_CALLED:
-                return await self._check_tool_called(rule.tool_name)
+                return await self._check_tool_called(rule.tool_name, rule.min_count)
             elif rule.type == VerificationType.FILE_EXISTS:
                 return await self._check_file_exists(rule.path)
             elif rule.type == VerificationType.FILE_CONTAINS:
@@ -66,12 +66,13 @@ class VerificationEngine:
         messages = await self.sandbox.read_messages_log()
         return any(m.get("type") == "assistant" for m in messages)
 
-    async def _check_tool_called(self, tool_name: str | None) -> bool:
-        """Check if Claude called a specific tool."""
+    async def _check_tool_called(self, tool_name: str | None, min_count: int | None = None) -> bool:
+        """Check if Claude called a specific tool (optionally at least N times)."""
         if not tool_name:
             return False
 
         messages = await self.sandbox.read_messages_log()
+        count = 0
 
         for msg in messages:
             if msg.get("type") != "assistant":
@@ -80,7 +81,14 @@ class VerificationEngine:
             content = msg.get("message", {}).get("content", [])
             for block in content:
                 if block.get("type") == "tool_use" and block.get("name") == tool_name:
-                    return True
+                    count += 1
+                    # If no min_count required, return True on first match
+                    if min_count is None:
+                        return True
+
+        # If min_count specified, check we have enough
+        if min_count is not None:
+            return count >= min_count
 
         return False
 
