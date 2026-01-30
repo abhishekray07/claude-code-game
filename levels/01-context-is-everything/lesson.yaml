@@ -9,9 +9,9 @@ video:
 
 exercise:
   intro: |
-    Observe how CLAUDE.md instructions degrade as context fills up.
-    Watch Claude follow terminology rules at first, then drift as you load data.
-  objective: "Experience context limits through CLAUDE.md instruction degradation"
+    Observe how CLAUDE.md instructions can drift as context fills up.
+    This is an observation exercise - use /skip when you've seen enough.
+  objective: "Experience context limits through CLAUDE.md instruction adherence"
 
 intro: |
   LLMs have NO persistent memory. Only what fits in the context window matters.
@@ -20,53 +20,44 @@ intro: |
   - Use "transactions" instead of "expenses"
   - Use camelCase (not snake_case) in code examples
 
-  Let's see if Claude follows these as context fills up.
-
   Experiment:
 
   1. Start Claude: claude
   2. Ask: "What does this project do?"
-     → Notice Claude should say "transactions" (following CLAUDE.md)
-  3. Now fill the context by reading historical data:
-     "Read all files in historical_data/ and summarize spending by year"
-  4. After Claude reads many files, ask: "Explain how adding works"
-     → Does Claude still say "transactions" or does it slip back to "expenses"?
+     → Does Claude say "transactions"? (Check CLAUDE.md adherence)
+  3. Ask: "Show me example code for adding an expense"
+     → Does Claude use camelCase variables?
+  4. Fill context: "Read all files in historical_data/ and summarize by month"
+  5. After reading, ask: "Show me how the delete function works"
+     → Still using "transactions" and camelCase?
 
-  Check context usage with: /cost
-
-  The more context fills up, the less reliably Claude follows early instructions.
+  Use /cost to check context usage. Use /skip when done observing.
 
 verification:
   - type: message_exists
-  - type: tool_called
-    tool_name: Read
-    min_count: 15  # Require reading many files to fill context
 
 hints:
   - after_minutes: 2
-    text: "Ask 'What does this project do?' - does Claude say 'transactions' or 'expenses'?"
+    text: "Try asking for code examples - does Claude use camelCase or snake_case?"
   - after_minutes: 5
-    text: "Now ask Claude to read ALL the historical_data/ files to fill context"
-  - after_minutes: 10
-    text: "After reading files, ask another question. Is Claude still using 'transactions'?"
+    text: "Read the historical_data/ files to fill context, then ask more questions"
+  - after_minutes: 8
+    text: "Use /skip when you've observed whether instructions hold up under load"
 
 success: |
-  You observed CLAUDE.md instruction degradation!
+  You explored context and instruction adherence!
 
-  What you may have noticed:
-  - Early on, Claude followed "transactions" and camelCase from CLAUDE.md
-  - As context filled with historical data, adherence may have dropped
-  - Claude might slip back to "expenses" or snake_case defaults
+  Key insights:
+  - CLAUDE.md instructions are read at session start
+  - As context fills, early instructions can lose influence
+  - Claude may drift back to defaults (snake_case, "expenses")
 
-  Key insight: Context is finite. Instructions at the start can lose
-  influence as the context window fills with other content.
-
-  Strategies to combat this:
-  1. Keep CLAUDE.md concise - essential rules only
-  2. Repeat important instructions in your prompts
-  3. Use /compact to reset when context gets large
-  4. Front-load critical context, not just early in CLAUDE.md
+  Strategies for real projects:
+  1. Keep CLAUDE.md concise - prioritize what matters
+  2. Repeat critical instructions in prompts when context is large
+  3. Use /compact to reset when context gets bloated
+  4. Monitor context usage with /cost
 
 limits:
-  max_duration_minutes: 20
+  max_duration_minutes: 15
   max_claude_messages: 30
