@@ -115,13 +115,14 @@
 }
 
 .sidebar {
-  width: 300px;
+  width: 340px;
   padding: 24px;
   color: #fff;
   border-right: 1px solid #333;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  overflow-y: auto;
 }
 
 .level-info {
@@ -172,6 +173,44 @@
   padding: 2px 8px;
   border-radius: 4px;
   font-family: 'Menlo', monospace;
+}
+
+.instructions .objective {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(99, 102, 241, 0.1);
+  border-left: 3px solid #6366f1;
+  border-radius: 4px;
+  color: #ccc;
+}
+
+.step-by-step {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #333;
+}
+
+.step-by-step h3 {
+  color: #888;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.step-by-step pre {
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: #bbb;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 6px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .commands {
