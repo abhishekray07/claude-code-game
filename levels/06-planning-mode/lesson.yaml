@@ -1,41 +1,57 @@
 id: "planning-mode"
 number: 6
 module: "Planning"
-title: "Planning Mode"
+title: "Plan Mode for Complex Features"
 
 video:
   url: "https://vimeo.com/placeholder"
-  duration_seconds: 360
+  duration_seconds: 300
 
 exercise:
   intro: |
-    Use planning mode to have Claude think through a feature
-    before implementing it.
-  objective: "Use /plan to create an implementation plan"
+    Use plan mode to implement the reports module - a multi-file feature.
+  objective: "Use plan mode to implement monthly expense reports"
 
 intro: |
-  Big tasks need plans. Use planning mode:
+  Plan mode is for complex, multi-step features.
+
+  The reports module (reports.py) is empty - it raises NotImplementedError.
+
+  Use plan mode to implement:
+  - generate_monthly_report()
+  - get_category_breakdown()
+  - get_top_expenses()
+  - save_report()
 
   Type: claude
 
-  Then use "/plan" to ask Claude to plan adding a priority
-  system (high/medium/low) to the todo app.
+  Press Shift+Tab to toggle plan mode, then say:
+  "Implement the reports module with monthly reports, category breakdown, and top expenses"
 
 verification:
-  - type: message_exists
+  - type: file_contains
+    path: reports.py
+    pattern: "def generate_monthly_report"
+  - type: file_contains
+    path: reports.py
+    pattern: "def get_category_breakdown"
 
 hints:
   - after_minutes: 2
-    text: "Hint: Use /plan before asking for implementation"
-  - after_minutes: 4
-    text: "Hint: After reviewing the plan, approve it to start implementation"
+    text: "Press Shift+Tab to enter plan mode before describing the feature"
+  - after_minutes: 5
+    text: "Review Claude's plan, then approve to implement"
 
 success: |
-  Excellent! Planning mode helps you align with Claude before coding.
+  You used plan mode for a complex feature!
 
-  For complex features, always plan first. It prevents wrong turns
-  and wasted effort.
+  1. Entered plan mode (Shift+Tab)
+  2. Described the feature
+  3. Reviewed the plan
+  4. Approved and implemented
+
+  Test it: python -c "from reports import generate_monthly_report; print(generate_monthly_report('2026-01'))"
 
 limits:
-  max_duration_minutes: 15
-  max_claude_messages: 20
+  max_duration_minutes: 20
+  max_claude_messages: 30
