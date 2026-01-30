@@ -41,6 +41,7 @@ function App() {
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
   const [phase, setPhase] = useState<LessonPhase>("watch");
+  const [selectedLesson, setSelectedLesson] = useState(1);
   const { progress, markComplete } = useProgress();
 
   const startGame = async (levelNumber: number = 1) => {
@@ -115,14 +116,29 @@ function App() {
               placeholder="Enter your Anthropic API key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && startGame(1)}
+              onKeyDown={(e) => e.key === "Enter" && startGame(selectedLesson)}
             />
-            <button
-              onClick={() => startGame(1)}
-              disabled={loading || !apiKey.trim()}
-            >
-              {loading ? "Starting..." : "Start Game"}
-            </button>
+            <div className="lesson-select-row">
+              <select
+                value={selectedLesson}
+                onChange={(e) => setSelectedLesson(Number(e.target.value))}
+                className="lesson-select"
+              >
+                {Array.from({ length: TOTAL_LESSONS }, (_, i) => i + 1).map(
+                  (n) => (
+                    <option key={n} value={n}>
+                      Lesson {n}
+                    </option>
+                  )
+                )}
+              </select>
+              <button
+                onClick={() => startGame(selectedLesson)}
+                disabled={loading || !apiKey.trim()}
+              >
+                {loading ? "Starting..." : "Start"}
+              </button>
+            </div>
           </div>
 
           {error && <p className="error">{error}</p>}
