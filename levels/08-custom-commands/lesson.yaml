@@ -1,44 +1,55 @@
-id: "git-integration"
+id: "custom-commands"
 number: 8
-module: "Workflow"
-title: "Git Integration"
+module: "Building Blocks"
+title: "Custom Commands"
 
 video:
   url: "https://vimeo.com/placeholder"
-  duration_seconds: 360
+  duration_seconds: 300
 
 exercise:
   intro: |
-    Have Claude create a commit with a good commit message.
-    Practice the git workflow.
-  objective: "Create a git commit using Claude"
+    Create slash commands for repetitive workflows.
+  objective: "Create /report, /backup, and /test commands"
 
 intro: |
-  Claude handles git operations seamlessly.
+  Commands are in .claude/commands/*.md
+  Invoke with /command-name
 
-  First initialize git, then have Claude commit your changes
-  with a meaningful commit message.
+  Create three commands:
+  1. /report - Generate monthly expense report
+  2. /backup - Export expenses to JSON
+  3. /test - Run pytest with verbose output
 
   Type: claude
 
-  Ask Claude to initialize git and commit the todo app.
+  Say: "Create a /report command that generates a monthly expense report.
+  Put it in .claude/commands/report.md"
 
 verification:
-  - type: commit_exists
-    pattern: ".*"
+  - type: file_exists
+    path: .claude/commands/report.md
+  - type: file_exists
+    path: .claude/commands/backup.md
+  - type: file_exists
+    path: .claude/commands/test.md
 
 hints:
   - after_minutes: 2
-    text: "Hint: Ask Claude to initialize a git repo and commit"
-  - after_minutes: 4
-    text: "Hint: Claude can write good commit messages automatically"
+    text: "Ask Claude to create .claude/commands/report.md"
+  - after_minutes: 5
+    text: "Create backup.md and test.md the same way"
 
 success: |
-  Commit created! Claude writes conventional commit messages
-  and handles the git workflow for you.
+  You created custom commands!
 
-  You can also ask it to create branches, PRs, and more.
+  Test them:
+  - /report - generates expense report
+  - /backup - exports to JSON
+  - /test - runs pytest
+
+  Commands codify repetitive workflows.
 
 limits:
   max_duration_minutes: 15
-  max_claude_messages: 15
+  max_claude_messages: 20
