@@ -24,7 +24,7 @@ intro: |
   1. Open the exercise folder: cd levels/01-context-is-everything/exercise
   2. Start Claude: claude
   3. Ask: "What does this project do?"
-  4. Notice Claude ends with [EXPENSE_TRACKER_ACTIVE] (from .claude/CLAUDE.md)
+  4. Notice Claude ends with [EXPENSE_TRACKER_ACTIVE] (from CLAUDE.md)
   5. Now say: "Read all the expense files in historical_data/ and give me a
      complete year-by-year breakdown of spending trends. Read every file."
   6. Claude will read 58 monthly JSON files (~150k tokens of data)
