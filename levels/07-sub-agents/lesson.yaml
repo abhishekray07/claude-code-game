@@ -1,41 +1,49 @@
-id: "testing-debugging"
+id: "sub-agents"
 number: 7
-module: "Quality"
-title: "Testing & Debugging"
+module: "Building Blocks"
+title: "Sub-Agents for Context Isolation"
 
 video:
   url: "https://vimeo.com/placeholder"
-  duration_seconds: 420
+  duration_seconds: 300
 
 exercise:
   intro: |
-    Run the existing tests, then have Claude fix any failures.
-    Add a new test for a feature.
-  objective: "Run pytest and ensure all tests pass"
+    Use a sub-agent to explore the codebase without polluting your main context.
+  objective: "Use sub-agents to keep your main context clean"
 
 intro: |
-  Claude can run tests and fix failures automatically.
+  Sub-agents = fresh context window. Parent gets a clean summary.
+
+  You want to understand how the reporting module works, but don't
+  want all those details filling your main context.
 
   Type: claude
 
-  Ask Claude to run the tests and fix any issues it finds.
+  Say: "Use a sub-agent to analyze reports.py and summarize how it
+  generates reports. I just want a summary, not all the details."
+
+  After, run /context to see your context stayed clean.
 
 verification:
-  - type: command_output
-    command: "pytest -v"
-    expected_output: "passed"
+  - type: message_exists
+  - type: tool_called
+    tool_name: Task
 
 hints:
   - after_minutes: 2
-    text: "Hint: Ask Claude to run pytest"
+    text: "Ask Claude to 'use a sub-agent' to explore reports.py"
   - after_minutes: 4
-    text: "Hint: If tests fail, Claude will usually fix them automatically"
+    text: "Run /context after to verify your context is still low"
 
 success: |
-  All tests passing! You've learned to use Claude for testing.
+  You used sub-agents for context isolation!
 
-  Claude can write tests, run them, and fix failures in a loop
-  until everything works.
+  The sub-agent explored reports.py in its own context.
+  You got a clean summary without the noise.
+
+  Sub-agents are for research and exploration.
+  Keep your main session clean for actual work.
 
 limits:
   max_duration_minutes: 15
