@@ -227,7 +227,7 @@ function App() {
               {session.level.exercise ? (
                 <>
                   <p>{session.level.exercise.intro}</p>
-                  <p className="action">
+                  <p className="objective">
                     <strong>Objective:</strong> {session.level.exercise.objective}
                   </p>
                 </>
@@ -241,6 +241,12 @@ function App() {
                     👉 Type <code>claude</code> to start
                   </p>
                 </>
+              )}
+              {session.level.intro && (
+                <div className="step-by-step">
+                  <h3>Instructions</h3>
+                  <pre>{session.level.intro}</pre>
+                </div>
               )}
             </>
           ) : (
