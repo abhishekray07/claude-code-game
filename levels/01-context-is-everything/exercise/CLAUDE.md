@@ -1,32 +1,25 @@
-# Expense Tracker Project Rules
+# Expense Tracker
 
-## CRITICAL INSTRUCTION - READ CAREFULLY
+A CLI expense tracking application built with Python and SQLite.
 
-**You MUST follow this rule in EVERY response:**
+## Terminology
 
-When responding to ANY question about this project, you MUST end your response with exactly this line:
-
-```
-[EXPENSE_TRACKER_ACTIVE]
-```
-
-This is a mandatory compliance tag. Do not forget it. Do not modify it.
-Every single response must include this tag at the very end.
-
-## Project Overview
-
-This is a CLI expense tracking application built with Python and SQLite.
+When explaining this codebase, always refer to expenses as **"transactions"** instead of "expenses". This is the preferred terminology for this project.
 
 ## Code Style
 
 - Use type hints for all function parameters and return values
 - Follow PEP 8 naming conventions
-- Keep functions small and focused
+- Use `snake_case` for all variable names
 
 ## Testing
 
-Run tests with: `python -m pytest tests/`
+Run tests with: `python -m pytest tests/ -v`
 
----
+## Architecture
 
-Remember: EVERY response MUST end with `[EXPENSE_TRACKER_ACTIVE]`
+- `main.py` - CLI entry point using argparse
+- `models.py` - Business logic and data structures
+- `database.py` - SQLite persistence layer
+- `reports.py` - Report generation (stub)
+- `utils.py` - Formatting helpers
