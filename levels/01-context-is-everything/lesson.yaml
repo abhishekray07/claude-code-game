@@ -10,7 +10,7 @@ video:
 exercise:
   intro: |
     Observe how CLAUDE.md instructions can drift as context fills up.
-    This is an observation exercise - use /skip when you've seen enough.
+    This is an observation exercise to build intuition.
   objective: "Experience context limits through CLAUDE.md instruction adherence"
 
 intro: |
@@ -31,7 +31,7 @@ intro: |
   5. After reading, ask: "Show me how the delete function works"
      → Still using "transactions" and camelCase?
 
-  Use /cost to check context usage. Use /skip when done observing.
+  Use /context to check context usage.
 
 verification:
   - type: message_exists
@@ -42,7 +42,7 @@ hints:
   - after_minutes: 5
     text: "Read the historical_data/ files to fill context, then ask more questions"
   - after_minutes: 8
-    text: "Use /skip when you've observed whether instructions hold up under load"
+    text: "Use /context to see how full the context window is"
 
 success: |
   You explored context and instruction adherence!
@@ -56,7 +56,7 @@ success: |
   1. Keep CLAUDE.md concise - prioritize what matters
   2. Repeat critical instructions in prompts when context is large
   3. Use /compact to reset when context gets bloated
-  4. Monitor context usage with /cost
+  4. Monitor context usage with /context
 
 limits:
   max_duration_minutes: 15
