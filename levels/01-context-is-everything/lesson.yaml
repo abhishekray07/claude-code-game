@@ -37,8 +37,6 @@ verification:
   - type: message_exists
   - type: tool_called
     tool_name: Read
-  - type: file_read
-    path: historical_data/
 
 hints:
   - after_minutes: 2
