@@ -1,46 +1,51 @@
-id: "mcp-servers"
+id: "code-search"
 number: 10
-module: "Integration"
-title: "MCP Servers"
+module: "Workflows"
+title: "Code Search Workflow"
 
 video:
   url: "https://vimeo.com/placeholder"
-  duration_seconds: 480
+  duration_seconds: 300
 
 exercise:
   intro: |
-    Learn about MCP (Model Context Protocol) servers.
-    These extend Claude's capabilities with external tools.
-  objective: "Understand MCP servers and their configuration"
+    Create a /search command that uses sub-agents to explore the codebase.
+  objective: "Build a code search workflow combining commands and sub-agents"
 
 intro: |
-  MCP servers extend Claude Code's capabilities.
+  Combine primitives into powerful workflows.
 
-  They can provide:
-  - Database access
-  - API integrations
-  - Custom tools
-  - External data sources
+  Create a /search command that:
+  1. Takes a query like "how does filtering work?"
+  2. Uses a sub-agent to grep, read files, trace code
+  3. Returns a summary with file:line references
 
   Type: claude
 
-  Ask Claude to explain how MCP servers work and list common ones.
+  Say: "Create a /search command in .claude/commands/search.md that
+  uses sub-agents to explore the codebase and return a summary"
 
 verification:
-  - type: message_exists
+  - type: file_exists
+    path: .claude/commands/search.md
+  - type: file_contains
+    path: .claude/commands/search.md
+    pattern: "(sub-agent|Task|grep|search)"
 
 hints:
   - after_minutes: 2
-    text: "Hint: Ask Claude about MCP servers"
-  - after_minutes: 4
-    text: "Hint: Try asking what MCP servers are commonly used"
+    text: "The search command should describe using sub-agents"
+  - after_minutes: 5
+    text: "Test with: /search how does category filtering work?"
 
 success: |
-  Great! MCP servers are how you extend Claude Code.
+  You built a code search workflow!
 
-  Popular ones include GitHub, Slack, databases, and more.
-  Check the MCP documentation for the full list.
+  Test it: /search how does the database work?
+
+  You combined primitives (commands + sub-agents) into
+  a powerful exploration tool.
 
 limits:
-  max_duration_minutes: 10
-  max_claude_messages: 10
+  max_duration_minutes: 15
+  max_claude_messages: 20
