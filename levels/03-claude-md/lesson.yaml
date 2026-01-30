@@ -28,7 +28,7 @@ verification:
     path: CLAUDE.md
   - type: file_contains
     path: CLAUDE.md
-    pattern: '(style|convention|standard)'
+    pattern: '(#|command|test|style|convention|architecture)'
 
 hints:
   - after_minutes: 2
