@@ -6,7 +6,7 @@ import { Terminal } from "./components/Terminal";
 import { VideoPlayer } from "./components/VideoPlayer";
 import { useProgress } from "./hooks/useProgress";
 
-const TOTAL_LESSONS = 12;
+const TOTAL_LESSONS = 9;
 
 interface Video {
   url: string;
@@ -222,40 +222,34 @@ function App() {
         </div>
 
         <div className="instructions">
-          {!levelComplete ? (
+          {session.level.exercise ? (
             <>
-              {session.level.exercise ? (
-                <>
-                  <p>{session.level.exercise.intro}</p>
-                  <p className="objective">
-                    <strong>Objective:</strong> {session.level.exercise.objective}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p>
-                    Claude Code is an AI coding assistant that lives in your
-                    terminal.
-                  </p>
-                  <p className="action">
-                    👉 Type <code>claude</code> to start
-                  </p>
-                </>
-              )}
-              {session.level.intro && (
-                <div className="step-by-step">
-                  <h3>Instructions</h3>
-                  <pre>{session.level.intro}</pre>
-                </div>
-              )}
+              <p>{session.level.exercise.intro}</p>
+              <p className="objective">
+                <strong>Objective:</strong> {session.level.exercise.objective}
+              </p>
             </>
           ) : (
             <>
-              <p>Nice work! You've completed this lesson's objective.</p>
+              <p>
+                Claude Code is an AI coding assistant that lives in your
+                terminal.
+              </p>
               <p className="action">
-                👉 Click <strong>Next Lesson</strong> below to continue
+                👉 Type <code>claude</code> to start
               </p>
             </>
+          )}
+          {session.level.intro && (
+            <div className="step-by-step">
+              <h3>Instructions</h3>
+              <pre>{session.level.intro}</pre>
+            </div>
+          )}
+          {levelComplete && (
+            <div className="completion-message">
+              <p>Nice work! You've completed this lesson's objective.</p>
+            </div>
           )}
         </div>
 

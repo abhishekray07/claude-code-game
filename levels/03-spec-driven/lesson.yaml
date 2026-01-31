@@ -1,0 +1,52 @@
+id: "spec-driven"
+number: 3
+module: "Planning"
+title: "Spec-Driven Development"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    The spec is the deliverable. Write a clear spec for recurring expenses.
+    Implementation is optional - focus on the planning document.
+  objective: "Create a spec file for recurring expenses"
+
+intro: |
+  Better specs = better code. The spec IS the deliverable.
+
+  You want to add recurring expenses (monthly bills like rent, subscriptions).
+
+  Create a spec file:
+    specs/recurring-expenses.md
+
+  Include:
+  - Problem: Why do we need this?
+  - Requirements: What must it do?
+  - Implementation approach: How should it work?
+
+  Type: claude
+
+  Say: "Help me write a spec for recurring expenses in specs/recurring-expenses.md"
+
+  Review the spec carefully before approving. This is the main skill.
+
+verification:
+  - type: glob_exists
+    pattern: "specs/*.md"
+
+success: |
+  You practiced spec-driven development!
+
+  The spec is the hard part:
+  - Clear problem statement
+  - Concrete requirements
+  - Implementation approach
+
+  With a good spec, implementation becomes straightforward.
+  Specs eliminate ambiguity and improve results.
+
+limits:
+  max_duration_minutes: 20
+  max_claude_messages: 25

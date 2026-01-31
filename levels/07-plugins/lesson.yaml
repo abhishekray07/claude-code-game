@@ -1,0 +1,50 @@
+id: "plugins"
+number: 7
+module: "Extensions"
+title: "Installing Plugins"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    Plugins add new skills and workflows to Claude Code.
+    You'll install superpowers and use the brainstorm skill.
+  objective: "Install the superpowers plugin and run /brainstorm"
+
+intro: |
+  Plugins bundle skills, commands, and workflows together.
+
+  Install the superpowers plugin:
+
+  1. First, register the marketplace:
+     /plugin marketplace add obra/superpowers-marketplace
+
+  2. Then install the plugin:
+     /plugin install superpowers@superpowers-marketplace
+
+  After installing, test the brainstorm skill:
+
+  Say: "I want to add a CSV export feature to this expense tracker"
+
+  The brainstorm skill will help you think through the design
+  before jumping into implementation.
+
+verification:
+  - type: message_exists
+
+success: |
+  You installed a plugin with bundled skills!
+
+  The superpowers plugin includes:
+  - /brainstorm - Think through features before coding
+  - /test-driven-development - Write tests first
+  - /systematic-debugging - Debug methodically
+  - And more...
+
+  Plugins let you share and reuse workflows.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 20

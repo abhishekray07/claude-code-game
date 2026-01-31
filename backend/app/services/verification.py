@@ -56,6 +56,14 @@ class VerificationEngine:
                 return await self._check_commit_exists(rule.pattern)
             elif rule.type == VerificationType.COMMAND_OUTPUT:
                 return await self._check_command_output(rule.command, rule.expected_output)
+            elif rule.type == VerificationType.MIN_USER_MESSAGES:
+                return await self._check_min_user_messages(rule.min_count)
+            elif rule.type == VerificationType.GLOB_EXISTS:
+                return await self._check_glob_exists(rule.pattern)
+            elif rule.type == VerificationType.HOME_GLOB_EXISTS:
+                return await self._check_home_glob_exists(rule.pattern)
+            elif rule.type == VerificationType.TOOL_CALLED_WITH_PATH:
+                return await self._check_tool_called_with_path(rule.tool_name, rule.pattern)
             return False
         except Exception as e:
             logger.error(f"Error checking rule {rule.type}: {e}")
@@ -101,7 +109,9 @@ class VerificationEngine:
         if hasattr(self.sandbox, 'workspace_dir') and self.sandbox.workspace_dir:
             from pathlib import Path
             file_path = self.sandbox.workspace_dir / path
-            return file_path.exists()
+            exists = file_path.exists()
+            logger.debug(f"file_exists check: {file_path} -> {exists}")
+            return exists
 
         # Fallback for Modal sandbox
         full_path = f"/workspace/{path}" if not path.startswith("/") else path
@@ -120,9 +130,12 @@ class VerificationEngine:
             from pathlib import Path
             file_path = self.sandbox.workspace_dir / path
             if not file_path.exists():
+                logger.debug(f"file_contains check: {file_path} does not exist")
                 return False
             content = file_path.read_text()
-            return bool(re.search(pattern, content))
+            matches = bool(re.search(pattern, content))
+            logger.debug(f"file_contains check: {file_path} pattern={pattern} -> {matches}")
+            return matches
 
         # Fallback for Modal sandbox
         full_path = f"/workspace/{path}" if not path.startswith("/") else path
@@ -179,3 +192,67 @@ class VerificationEngine:
         if expected:
             return bool(re.search(expected, stdout + stderr))
         return returncode == 0  # Just check success
+
+    async def _check_min_user_messages(self, min_count: int | None) -> bool:
+        """Check if user has sent at least N messages."""
+        if not min_count:
+            return True
+
+        messages = await self.sandbox.read_messages_log()
+        user_count = sum(1 for m in messages if m.get("type") == "human")
+        return user_count >= min_count
+
+    async def _check_glob_exists(self, pattern: str | None) -> bool:
+        """Check if any file matches the glob pattern."""
+        if not pattern:
+            return False
+
+        # For LocalSandbox, use glob directly
+        if hasattr(self.sandbox, 'workspace_dir') and self.sandbox.workspace_dir:
+            import glob
+            full_pattern = str(self.sandbox.workspace_dir / pattern)
+            matches = glob.glob(full_pattern, recursive=True)
+            logger.debug(f"glob_exists check: {full_pattern} -> {len(matches)} matches")
+            return len(matches) > 0
+
+        # Fallback for Modal sandbox - use find command
+        stdout, stderr, returncode = await self.sandbox.exec_command(
+            "find", "/workspace", "-path", f"/workspace/{pattern}", "-type", "f"
+        )
+        return bool(stdout.strip())
+
+    async def _check_home_glob_exists(self, pattern: str | None) -> bool:
+        """Check if any file matches glob pattern in ~/.claude/ directory."""
+        if not pattern:
+            return False
+
+        import glob
+        from pathlib import Path
+
+        home_dir = Path.home()
+        full_pattern = str(home_dir / ".claude" / pattern)
+        matches = glob.glob(full_pattern, recursive=True)
+        logger.debug(f"home_glob_exists check: {full_pattern} -> {len(matches)} matches")
+        return len(matches) > 0
+
+    async def _check_tool_called_with_path(self, tool_name: str | None, path_pattern: str | None) -> bool:
+        """Check if a tool was called with a file_path matching the pattern."""
+        if not tool_name or not path_pattern:
+            return False
+
+        messages = await self.sandbox.read_messages_log()
+
+        for msg in messages:
+            if msg.get("type") != "assistant":
+                continue
+
+            content = msg.get("message", {}).get("content", [])
+            for block in content:
+                if block.get("type") == "tool_use" and block.get("name") == tool_name:
+                    tool_input = block.get("input", {})
+                    file_path = tool_input.get("file_path", "")
+                    if re.search(path_pattern, file_path):
+                        logger.debug(f"tool_called_with_path: {tool_name} with {file_path} matches {path_pattern}")
+                        return True
+
+        return False
