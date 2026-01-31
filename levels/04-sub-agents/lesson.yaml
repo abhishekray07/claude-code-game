@@ -1,0 +1,44 @@
+id: "sub-agents"
+number: 4
+module: "Building Blocks"
+title: "Sub-Agents for Context Isolation"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    Use a sub-agent to explore the codebase without polluting your main context.
+  objective: "Use sub-agents to keep your main context clean"
+
+intro: |
+  Sub-agents = fresh context window. Parent gets a clean summary.
+
+  You want to understand how the reporting module works, but don't
+  want all those details filling your main context.
+
+  Type: claude
+
+  Say: "Use a sub-agent to analyze reports.py and summarize how it
+  generates reports. I just want a summary, not all the details."
+
+  After, run /context to see your context stayed clean.
+
+verification:
+  - type: message_exists
+  - type: tool_called
+    tool_name: Task
+
+success: |
+  You used sub-agents for context isolation!
+
+  The sub-agent explored reports.py in its own context.
+  You got a clean summary without the noise.
+
+  Sub-agents are for research and exploration.
+  Keep your main session clean for actual work.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 20

@@ -2,18 +2,13 @@
 
 A CLI expense tracking application built with Python and SQLite.
 
-## Terminology
-
-When explaining this codebase, always refer to expenses as **"transactions"** instead of "expenses". This is the preferred terminology for this project.
-
 ## Code Style
 
 - Use type hints for all function parameters and return values
-- **IMPORTANT: Use `camelCase` for all variable names in code examples** (this project follows JavaScript conventions for cross-team consistency)
 
 ## Testing
 
-Run tests with: `python -m pytest tests/ -v`
+Always run tests before committing: `python -m pytest tests/ -v`
 
 ## Architecture
 

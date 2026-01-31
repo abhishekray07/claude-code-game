@@ -1,0 +1,46 @@
+id: "skills"
+number: 5
+module: "Building Blocks"
+title: "Skills (Auto-Activating Commands)"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    Create a skill that auto-activates when you ask about code.
+  objective: "Create a code explainer skill"
+
+intro: |
+  Skills live in ~/.claude/skills/ and auto-activate based on context.
+
+  Commands = manual (/command-name)
+  Skills = automatic (triggered by keywords/context)
+
+  Create a code explainer skill:
+
+  Type: claude
+
+  Say: "Create a skill called 'code-explainer' that activates when I ask
+  to explain code. It should read the relevant files and explain what
+  they do in plain English."
+
+  After creating, test it by asking: "Explain the models.py file"
+
+verification:
+  - type: tool_called_with_path
+    tool_name: Write
+    pattern: "\\.claude/skills/.*SKILL\\.md"
+
+success: |
+  You created an auto-activating skill!
+
+  Test it: "Explain the database.py file"
+
+  Skills auto-trigger based on context.
+  Commands require explicit /invocation.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 20

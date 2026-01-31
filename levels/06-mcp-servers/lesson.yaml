@@ -1,0 +1,51 @@
+id: "mcp-servers"
+number: 6
+module: "Extensions"
+title: "MCP Servers for Documentation"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    Connect Claude to external tools using MCP (Model Context Protocol).
+    You'll add context7 for up-to-date library documentation.
+  objective: "Install context7 MCP server and use it to look up docs"
+
+intro: |
+  MCP servers give Claude access to external tools and data.
+
+  context7 provides up-to-date documentation for libraries/frameworks.
+  No more outdated training data!
+
+  Install context7:
+
+  Type: claude
+
+  Say: "Add the context7 MCP server using:
+  claude mcp add context7 -- npx -y @upstash/context7-mcp@latest"
+
+  After installing, test it:
+
+  Say: "Look up the FastAPI documentation for creating routes"
+
+  Claude will fetch current docs instead of relying on training data.
+
+verification:
+  - type: message_exists
+
+success: |
+  You connected Claude to external documentation!
+
+  MCP servers extend Claude's capabilities:
+  - context7: Library documentation
+  - postgres: Database access
+  - github: Repository management
+  - And many more...
+
+  Verify with: claude mcp list
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 20

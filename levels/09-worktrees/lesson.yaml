@@ -1,0 +1,66 @@
+id: "worktrees"
+number: 9
+module: "Safety"
+title: "Git Worktrees for Parallel Work"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    Worktrees let you work on multiple branches simultaneously.
+    You'll create a worktree, make a change, and merge it back.
+  objective: "Complete a full worktree workflow: create, change, merge"
+
+intro: |
+  Git worktrees = multiple working directories for one repo.
+
+  Complete workflow:
+
+  0. INITIALIZE GIT (first time only)
+     Type: claude
+     Say: "Initialize this as a git repo and commit all files"
+
+  1. CREATE WORKTREE
+     Say: "Create a git worktree for a feature branch called 'add-version'
+     in ../add-version directory"
+
+  2. MAKE A CHANGE (in the worktree)
+     Say: "In the worktree, add a --version flag to main.py that prints
+     'Expense Tracker v1.0'. Then commit it."
+
+  3. MERGE BACK TO MAIN
+     Say: "Switch back to main and merge the add-version branch"
+
+  4. CLEAN UP
+     Say: "Remove the worktree now that we're done"
+
+  This is how you safely experiment with parallel Claude sessions!
+
+verification:
+  - type: commit_exists
+    pattern: "version"
+
+success: |
+  Congratulations! You've completed the Claude Code course!
+
+  You learned:
+  1. CLAUDE.md - Project context
+  2. Plan Mode - Think before coding
+  3. Specs - Write requirements first
+  4. Sub-agents - Context isolation
+  5. Skills - Auto-activating commands
+  6. MCP Servers - External tools
+  7. Plugins - Bundled workflows
+  8. Hooks - Safety guardrails
+  9. Worktrees - Parallel development
+
+  The worktree workflow:
+  init → create → work → commit → merge → cleanup
+
+  Now go build something amazing!
+
+limits:
+  max_duration_minutes: 20
+  max_claude_messages: 30

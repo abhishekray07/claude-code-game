@@ -12,6 +12,10 @@ class VerificationType(str, Enum):
     FILE_CHANGED = "file_changed"
     COMMIT_EXISTS = "commit_exists"
     COMMAND_OUTPUT = "command_output"
+    MIN_USER_MESSAGES = "min_user_messages"
+    GLOB_EXISTS = "glob_exists"  # Check if any file matches glob pattern
+    HOME_GLOB_EXISTS = "home_glob_exists"  # Check for files in ~/.claude/
+    TOOL_CALLED_WITH_PATH = "tool_called_with_path"  # Check if tool was called with path pattern
 
 
 class VerificationRule(BaseModel):
