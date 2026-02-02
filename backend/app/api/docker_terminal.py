@@ -15,7 +15,6 @@ router = APIRouter()
 class CreateSessionRequest(BaseModel):
     """Request to create a new session."""
 
-    api_key: str
     level_number: int = 1
 
 
@@ -32,9 +31,6 @@ class CreateSessionResponse(BaseModel):
 @router.post("/api/docker/sessions", response_model=CreateSessionResponse)
 async def create_session(request: CreateSessionRequest):
     """Create a new Docker sandbox session."""
-    if not request.api_key or not request.api_key.startswith("sk-ant-"):
-        raise HTTPException(status_code=400, detail="Invalid API key format")
-
     session_id = str(uuid.uuid4())[:8]
 
     # Load level
@@ -48,7 +44,6 @@ async def create_session(request: CreateSessionRequest):
         result = await sandbox_manager.create_session(
             session_id=session_id,
             level_number=request.level_number,
-            api_key=request.api_key,
         )
     except RuntimeError as e:
         logger.error(f"Sandbox runtime error: {e}", exc_info=True)
