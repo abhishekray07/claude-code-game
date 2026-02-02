@@ -54,13 +54,15 @@ class SandboxManager:
             logger.info(f"Cleaning up idle session: {session_id}")
             await self.destroy_session(session_id)
 
-    async def create_session(self, session_id: str, level_number: int, api_key: str) -> dict:
+    async def create_session(
+        self, session_id: str, level_number: int, api_key: str | None = None
+    ) -> dict:
         """Create a new sandbox session.
 
         Args:
             session_id: Unique identifier for the session.
             level_number: Level number to load in the sandbox.
-            api_key: Anthropic API key for Claude.
+            api_key: Optional Anthropic API key. If not provided, user authenticates via CLI.
 
         Returns:
             Dict with session_id, port, and ttyd_token.
@@ -81,7 +83,10 @@ class SandboxManager:
         try:
             sandbox = DockerSandbox(session_id, port, level_number)
             await sandbox.create()
-            await sandbox.setup_credentials(api_key)
+
+            # Only setup credentials if API key is provided
+            if api_key:
+                await sandbox.setup_credentials(api_key)
 
             # Wait for ttyd to be ready
             await asyncio.sleep(2)

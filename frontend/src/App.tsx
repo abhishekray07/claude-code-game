@@ -48,7 +48,6 @@ type LessonPhase = "watch" | "exercise";
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [accessCode, setAccessCode] = useState("");
-  const [apiKey, setApiKey] = useState(""); // For Docker mode
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
@@ -109,12 +108,6 @@ function App() {
   }, [stopPolling]);
 
   const startGame = async (levelNumber: number = 1) => {
-    // For Docker mode, API key is required upfront
-    if (isDockerMode && !apiKey) {
-      setError("API key is required for Docker mode");
-      return;
-    }
-
     setLoading(true);
     setError("");
     setLevelComplete(false);
@@ -130,7 +123,6 @@ function App() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            api_key: apiKey,
             level_number: levelNumber,
           }),
         });
@@ -224,17 +216,7 @@ function App() {
           </p>
 
           <div className="input-group">
-            {isDockerMode ? (
-              <>
-                <input
-                  type="password"
-                  placeholder="Anthropic API Key (sk-ant-...)"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && startGame(selectedLesson)}
-                />
-              </>
-            ) : (
+            {!isDockerMode && (
               <input
                 type="text"
                 placeholder="Access code (if required)"
@@ -259,7 +241,7 @@ function App() {
               </select>
               <button
                 onClick={() => startGame(selectedLesson)}
-                disabled={loading || (isDockerMode && !apiKey)}
+                disabled={loading}
               >
                 {loading ? "Starting..." : "Start"}
               </button>
@@ -269,31 +251,15 @@ function App() {
           {error && <p className="error">{error}</p>}
 
           <p className="hint">
-            {isDockerMode ? (
-              <>
-                Enter your Anthropic API key to start.{" "}
-                <a
-                  href="https://console.anthropic.com/settings/keys"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Get one here
-                </a>{" "}
-                if you don't have one.
-              </>
-            ) : (
-              <>
-                You'll enter your API key in the terminal.{" "}
-                <a
-                  href="https://console.anthropic.com/settings/keys"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Get one here
-                </a>{" "}
-                if you don't have one.
-              </>
-            )}
+            You'll authenticate via Claude CLI in the terminal.{" "}
+            <a
+              href="https://console.anthropic.com/settings/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Get an API key here
+            </a>{" "}
+            if you don't have one.
           </p>
 
           <div className="progress-indicator">
