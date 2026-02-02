@@ -2,14 +2,63 @@
 import asyncio
 import json
 import logging
+import os
 import secrets
+from pathlib import Path
 from typing import Any
 
 import docker
-from docker.errors import NotFound
+from docker.errors import DockerException, NotFound
 from docker.models.containers import Container
 
 logger = logging.getLogger(__name__)
+
+
+def get_docker_client() -> docker.DockerClient:
+    """Get a Docker client with auto-detection of socket location.
+
+    On macOS with Docker Desktop, the socket may be at a non-standard location.
+    This function tries common locations if the default fails.
+
+    Returns:
+        Docker client instance.
+
+    Raises:
+        DockerException: If no Docker connection can be established.
+    """
+    # If DOCKER_HOST is set, use the default behavior
+    if os.environ.get("DOCKER_HOST"):
+        return docker.from_env()
+
+    # Try default location first
+    try:
+        return docker.from_env()
+    except DockerException:
+        pass
+
+    # Common macOS Docker Desktop socket locations
+    socket_paths = [
+        Path.home() / ".docker" / "run" / "docker.sock",
+        Path("/var/run/docker.sock"),
+    ]
+
+    for socket_path in socket_paths:
+        if socket_path.exists():
+            try:
+                base_url = f"unix://{socket_path}"
+                client = docker.DockerClient(base_url=base_url)
+                # Test the connection
+                client.ping()
+                logger.info(f"Connected to Docker at {base_url}")
+                return client
+            except DockerException:
+                continue
+
+    # If all else fails, raise with helpful message
+    raise DockerException(
+        "Could not connect to Docker. Please ensure Docker is running. "
+        "On macOS, you may need to set DOCKER_HOST=unix://$HOME/.docker/run/docker.sock"
+    )
 
 
 class DockerSandbox:
@@ -21,7 +70,7 @@ class DockerSandbox:
         self.level_number = level_number
         self.container: Container | None = None
         self.ttyd_token: str | None = None
-        self._docker = docker.from_env()
+        self._docker = get_docker_client()
 
     async def create(self) -> str:
         """Create and start the sandbox container.
