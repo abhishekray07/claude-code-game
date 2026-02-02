@@ -1,12 +1,18 @@
 import "./App.css";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Terminal } from "./components/Terminal";
 import { VideoPlayer } from "./components/VideoPlayer";
 import { useProgress } from "./hooks/useProgress";
+import {
+  useVerificationProgress,
+  getVerificationLabel,
+} from "./hooks/useVerificationProgress";
+import { config } from "./config";
 
-const TOTAL_LESSONS = 9;
+const TOTAL_LESSONS = 9; // Lessons 1-9
+const STATUS_POLL_INTERVAL = 5000; // 5 seconds
 
 interface Video {
   url: string;
@@ -30,13 +36,19 @@ interface Level {
 interface Session {
   session_id: string;
   level: Level;
+  ttyd_url?: string; // Present for Fly.io mode
+  // Docker mode fields
+  port?: number;
+  ttyd_token?: string;
+  terminal_url?: string;
 }
 
 type LessonPhase = "watch" | "exercise";
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
-  const [apiKey, setApiKey] = useState(import.meta.env.VITE_ANTHROPIC_API_KEY || "");
+  const [accessCode, setAccessCode] = useState("");
+  const [apiKey, setApiKey] = useState(""); // For Docker mode
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
@@ -44,9 +56,62 @@ function App() {
   const [selectedLesson, setSelectedLesson] = useState(1);
   const { progress, markComplete } = useProgress();
 
+  // Check terminal mode
+  const isDockerMode = config.terminalMode === "docker";
+
+  // Verification progress for current exercise
+  const { progress: verificationProgress } = useVerificationProgress(
+    phase === "exercise" ? session?.session_id ?? null : null
+  );
+
+  // Status polling
+  const pollIntervalRef = useRef<number | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, []);
+
+  const startPolling = useCallback(
+    (sessionId: string, levelNumber: number) => {
+      stopPolling();
+
+      const poll = async () => {
+        try {
+          const response = await fetch(
+            `${config.apiUrl}/api/sessions/${sessionId}/status`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            if (data.completed) {
+              setLevelComplete(true);
+              markComplete(levelNumber);
+              stopPolling();
+            }
+          }
+        } catch (e) {
+          console.error("Status poll error:", e);
+        }
+      };
+
+      // Poll immediately, then every 5 seconds
+      poll();
+      pollIntervalRef.current = window.setInterval(poll, STATUS_POLL_INTERVAL);
+    },
+    [stopPolling, markComplete]
+  );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
+
   const startGame = async (levelNumber: number = 1) => {
-    if (!apiKey.trim()) {
-      setError("Please enter your API key");
+    // For Docker mode, API key is required upfront
+    if (isDockerMode && !apiKey) {
+      setError("API key is required for Docker mode");
       return;
     }
 
@@ -54,20 +119,55 @@ function App() {
     setError("");
     setLevelComplete(false);
     setPhase("watch");
+    stopPolling();
 
     try {
-      const response = await fetch("http://localhost:8080/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: apiKey, level_number: levelNumber }),
-      });
+      let data: Session;
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Failed to start session");
+      if (isDockerMode) {
+        // Docker mode: use Docker-specific API
+        const response = await fetch(`${config.apiUrl}/api/docker/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: apiKey,
+            level_number: levelNumber,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Failed to start Docker session");
+        }
+
+        const dockerData = await response.json();
+        // Transform Docker API response to match Session interface
+        data = {
+          session_id: dockerData.session_id,
+          level: dockerData.level,
+          port: dockerData.port,
+          ttyd_token: dockerData.ttyd_token,
+          terminal_url: dockerData.terminal_url,
+        };
+      } else {
+        // Default mode: use standard sessions API
+        const response = await fetch(`${config.apiUrl}/api/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            level_number: levelNumber,
+            access_code: accessCode,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Failed to start session");
+        }
+
+        data = await response.json();
       }
 
-      const data = await response.json();
       setSession(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
@@ -76,15 +176,11 @@ function App() {
     }
   };
 
-  const handleLevelComplete = useCallback(() => {
-    setLevelComplete(true);
-    if (session) {
-      markComplete(session.level.number);
-    }
-  }, [session, markComplete]);
-
   const startExercise = () => {
     setPhase("exercise");
+    if (session) {
+      startPolling(session.session_id, session.level.number);
+    }
   };
 
   const nextLevel = () => {
@@ -93,10 +189,27 @@ function App() {
       if (nextLevelNum <= TOTAL_LESSONS) {
         startGame(nextLevelNum);
       } else {
-        // Course complete!
         setSession(null);
         setLevelComplete(false);
       }
+    }
+  };
+
+  const endSession = async () => {
+    if (session) {
+      stopPolling();
+      try {
+        const endpoint = isDockerMode
+          ? `${config.apiUrl}/api/docker/sessions/${session.session_id}`
+          : `${config.apiUrl}/api/sessions/${session.session_id}`;
+        await fetch(endpoint, {
+          method: "DELETE",
+        });
+      } catch (e) {
+        console.error("Error ending session:", e);
+      }
+      setSession(null);
+      setLevelComplete(false);
     }
   };
 
@@ -111,13 +224,25 @@ function App() {
           </p>
 
           <div className="input-group">
-            <input
-              type="password"
-              placeholder="Enter your Anthropic API key"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && startGame(selectedLesson)}
-            />
+            {isDockerMode ? (
+              <>
+                <input
+                  type="password"
+                  placeholder="Anthropic API Key (sk-ant-...)"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && startGame(selectedLesson)}
+                />
+              </>
+            ) : (
+              <input
+                type="text"
+                placeholder="Access code (if required)"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && startGame(selectedLesson)}
+              />
+            )}
             <div className="lesson-select-row">
               <select
                 value={selectedLesson}
@@ -134,7 +259,7 @@ function App() {
               </select>
               <button
                 onClick={() => startGame(selectedLesson)}
-                disabled={loading || !apiKey.trim()}
+                disabled={loading || (isDockerMode && !apiKey)}
               >
                 {loading ? "Starting..." : "Start"}
               </button>
@@ -144,14 +269,31 @@ function App() {
           {error && <p className="error">{error}</p>}
 
           <p className="hint">
-            Don't have an API key?{" "}
-            <a
-              href="https://console.anthropic.com/settings/keys"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Get one here
-            </a>
+            {isDockerMode ? (
+              <>
+                Enter your Anthropic API key to start.{" "}
+                <a
+                  href="https://console.anthropic.com/settings/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Get one here
+                </a>{" "}
+                if you don't have one.
+              </>
+            ) : (
+              <>
+                You'll enter your API key in the terminal.{" "}
+                <a
+                  href="https://console.anthropic.com/settings/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Get one here
+                </a>{" "}
+                if you don't have one.
+              </>
+            )}
           </p>
 
           <div className="progress-indicator">
@@ -210,10 +352,9 @@ function App() {
     );
   }
 
-  // Exercise Phase (Game screen)
+  // Exercise Phase
   return (
     <div className="game-screen">
-      {/* Sidebar */}
       <div className="sidebar">
         <div className="level-info">
           <span className="module-badge">{session.level.module}</span>
@@ -222,30 +363,39 @@ function App() {
         </div>
 
         <div className="instructions">
-          {session.level.exercise ? (
-            <>
-              <p>{session.level.exercise.intro}</p>
-              <p className="objective">
-                <strong>Objective:</strong> {session.level.exercise.objective}
-              </p>
-            </>
-          ) : (
-            <>
-              <p>
-                Claude Code is an AI coding assistant that lives in your
-                terminal.
-              </p>
-              <p className="action">
-                👉 Type <code>claude</code> to start
-              </p>
-            </>
-          )}
           {session.level.intro && (
-            <div className="step-by-step">
-              <h3>Instructions</h3>
-              <pre>{session.level.intro}</pre>
+            <div className="intro" style={{whiteSpace: 'pre-line', marginBottom: '1rem'}}>
+              {session.level.intro}
             </div>
           )}
+          {session.level.exercise && (
+            <p className="objective">
+              <strong>Objective:</strong> {session.level.exercise.objective}
+            </p>
+          )}
+
+          {/* Verification Progress Checklist */}
+          {verificationProgress && verificationProgress.rules.length > 0 && (
+            <div className="verification-progress">
+              <h4>Progress</h4>
+              <ul className="verification-checklist">
+                {verificationProgress.rules.map((rule, index) => (
+                  <li key={index} className={rule.passed ? "passed" : "pending"}>
+                    <span className="check-icon">
+                      {rule.passed ? "\u2713" : "\u25CB"}
+                    </span>
+                    <span className="check-label">
+                      {getVerificationLabel(rule.type, rule)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="progress-summary">
+                {verificationProgress.passed_count} of {verificationProgress.total_count} complete
+              </div>
+            </div>
+          )}
+
           {levelComplete && (
             <div className="completion-message">
               <p>Nice work! You've completed this lesson's objective.</p>
@@ -253,29 +403,15 @@ function App() {
           )}
         </div>
 
-        <div className="commands">
-          <h3>Commands</h3>
-          <ul>
-            <li>
-              <code>/hint</code> - Get a hint
-            </li>
-            <li>
-              <code>/skip</code> - Skip this lesson
-            </li>
-            <li>
-              <code>/objective</code> - Show objective
-            </li>
-            <li>
-              <code>/progress</code> - Check progress
-            </li>
-          </ul>
-        </div>
-
         {session.level.video && (
           <button className="rewatch-btn" onClick={() => setPhase("watch")}>
             ↺ Rewatch Video
           </button>
         )}
+
+        <button className="end-session-btn" onClick={endSession}>
+          End Session
+        </button>
 
         {levelComplete && (
           <div className="level-complete">
@@ -294,11 +430,17 @@ function App() {
         )}
       </div>
 
-      {/* Terminal */}
       <div className="terminal-container">
         <Terminal
           sessionId={session.session_id}
-          onLevelComplete={handleLevelComplete}
+          ttydUrl={session.ttyd_url}
+          ttydPort={session.port}
+          ttydToken={session.ttyd_token}
+          onReady={() => console.log("Terminal ready")}
+          onLevelComplete={() => {
+            setLevelComplete(true);
+            markComplete(session.level.number);
+          }}
         />
       </div>
     </div>
