@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.services.sandbox_manager import sandbox_manager
 from app.services.levels import load_level_by_number
+from app.services.verification import VerificationEngine
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -104,3 +105,39 @@ async def get_session(session_id: str):
         "terminal_url": f"http://localhost:{session['port']}/",
         "level_number": session["level_number"],
     }
+
+
+@router.get("/api/docker/sessions/{session_id}/progress")
+async def get_progress(session_id: str):
+    """Get verification progress for a session."""
+    session = sandbox_manager.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    sandbox_manager.update_activity(session_id)
+
+    level = load_level_by_number(session["level_number"])
+    if not level:
+        raise HTTPException(status_code=404, detail="Level not found")
+
+    engine = VerificationEngine(session["sandbox"])
+    progress = await engine.get_progress(level)
+    return {"progress": progress}
+
+
+@router.get("/api/docker/sessions/{session_id}/status")
+async def get_status(session_id: str):
+    """Check if level is complete."""
+    session = sandbox_manager.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    sandbox_manager.update_activity(session_id)
+
+    level = load_level_by_number(session["level_number"])
+    if not level:
+        raise HTTPException(status_code=404, detail="Level not found")
+
+    engine = VerificationEngine(session["sandbox"])
+    completed = await engine.check_level_complete(level)
+    return {"completed": completed, "session_id": session_id}
