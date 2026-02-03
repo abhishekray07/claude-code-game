@@ -175,14 +175,56 @@ function App() {
     }
   };
 
-  const nextLevel = () => {
-    if (session) {
+  const nextLevel = async () => {
+    if (session && isDockerMode) {
       const nextLevelNum = session.level.number + 1;
       if (nextLevelNum <= TOTAL_LESSONS) {
-        startGame(nextLevelNum);
+        setLoading(true);
+        setLevelComplete(false);
+        setPhase("watch");
+        stopPolling();
+
+        try {
+          const response = await fetch(
+            `${config.apiUrl}/api/docker/sessions/${session.session_id}/level`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ level_number: nextLevelNum }),
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || "Failed to update level");
+          }
+
+          const data = await response.json();
+          setSession({
+            ...session,
+            level: data.level,
+            port: data.port,
+            ttyd_token: data.ttyd_token,
+          });
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Unknown error");
+        } finally {
+          setLoading(false);
+        }
       } else {
         setSession(null);
         setLevelComplete(false);
+      }
+    } else {
+      // Non-Docker mode: original behavior
+      if (session) {
+        const nextLevelNum = session.level.number + 1;
+        if (nextLevelNum <= TOTAL_LESSONS) {
+          startGame(nextLevelNum);
+        } else {
+          setSession(null);
+          setLevelComplete(false);
+        }
       }
     }
   };
