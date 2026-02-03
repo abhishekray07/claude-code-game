@@ -27,7 +27,8 @@ intro: |
   Type: claude
 
   Say: "Create a pre-command hook that blocks any command containing
-  'rm -rf'. Put it in .claude/hooks/block-dangerous.sh"
+  'rm -rf'. Put the script in .claude/hooks/block-dangerous.sh and
+  register it in .claude/settings.json so it runs before Bash commands."
 
   After creating, try: rm -rf test (it should be blocked!)
 
@@ -35,6 +36,10 @@ verification:
   - type: glob_exists
     description: "Create a hook script"
     pattern: ".claude/hooks/*.sh"
+  - type: file_contains
+    description: "Register hook in settings"
+    path: ".claude/settings.json"
+    pattern: "hooks"
 
 success: |
   You created a safety hook!

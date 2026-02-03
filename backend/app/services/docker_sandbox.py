@@ -170,7 +170,7 @@ class DockerSandbox:
             return []
 
         # Find jsonl file - Claude Code stores logs in ~/.claude/projects/
-        find_cmd = "find /home/claude/.claude/projects -name '*.jsonl' -type f 2>/dev/null | head -1"
+        find_cmd = "find /home/claude/.claude/projects -name '*.jsonl' -type f 2>/dev/null | xargs ls -t 2>/dev/null | head -1"
         exit_code, output = await asyncio.to_thread(
             self.container.exec_run,
             ["sh", "-c", find_cmd],
@@ -218,7 +218,7 @@ class DockerSandbox:
             rm -rf /home/claude/workspace/*
             rm -rf /home/claude/workspace/.claude 2>/dev/null || true
             rm -rf /home/claude/workspace/.git 2>/dev/null || true
-            rm -rf /home/claude/.claude/projects 2>/dev/null || true
+            find /home/claude/.claude/projects -name '*.jsonl' -type f -delete 2>/dev/null || true
             cp -r "$LEVEL_DIR/exercise/"* /home/claude/workspace/
             cp -r "$LEVEL_DIR/exercise/".* /home/claude/workspace/ 2>/dev/null || true
             chown -R claude:claude /home/claude/workspace
