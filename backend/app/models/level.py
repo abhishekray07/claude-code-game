@@ -27,6 +27,7 @@ class VerificationRule(BaseModel):
     pattern: str | None = None  # For FILE_CONTAINS, COMMIT_EXISTS (message pattern)
     command: str | None = None  # For COMMAND_OUTPUT
     expected_output: str | None = None  # For COMMAND_OUTPUT (regex pattern)
+    description: str | None = None  # Human-readable label for progress checklist
 
 
 class Hint(BaseModel):

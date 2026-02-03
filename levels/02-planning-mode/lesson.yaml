@@ -29,12 +29,14 @@ intro: |
   "Implement the reports module with monthly reports, category breakdown, and top expenses"
 
 verification:
-  - type: file_contains
-    path: reports.py
-    pattern: "def generate_monthly_report"
-  - type: file_contains
-    path: reports.py
-    pattern: "def get_category_breakdown"
+  - type: command_output
+    description: "Implement generate_monthly_report()"
+    command: "python3 -c \"from reports import generate_monthly_report;\ntry:\n generate_monthly_report()\n print('OK')\nexcept NotImplementedError:\n print('STUB')\nexcept Exception:\n print('OK')\" 2>&1"
+    expected_output: "OK"
+  - type: command_output
+    description: "Implement get_category_breakdown()"
+    command: "python3 -c \"from reports import get_category_breakdown;\ntry:\n get_category_breakdown([])\n print('OK')\nexcept NotImplementedError:\n print('STUB')\nexcept Exception:\n print('OK')\" 2>&1"
+    expected_output: "OK"
 
 success: |
   You used plan mode for a complex feature!

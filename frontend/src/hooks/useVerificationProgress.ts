@@ -6,6 +6,7 @@ interface VerificationRule {
   passed: boolean;
   path?: string;
   tool_name?: string;
+  description?: string;
 }
 
 interface VerificationProgress {
@@ -70,6 +71,9 @@ export function useVerificationProgress(sessionId: string | null) {
 
 // Human-readable labels for verification types
 export function getVerificationLabel(type: string, rule: VerificationRule): string {
+  // Use custom description if provided
+  if (rule.description) return rule.description;
+
   switch (type) {
     case "file_contains":
       return `Edit ${rule.path || "file"}`;
