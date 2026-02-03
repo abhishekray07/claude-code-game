@@ -40,7 +40,6 @@ interface Session {
   // Docker mode fields
   port?: number;
   ttyd_token?: string;
-  terminal_url?: string;
 }
 
 type LessonPhase = "watch" | "exercise";
@@ -79,9 +78,11 @@ function App() {
 
       const poll = async () => {
         try {
-          const response = await fetch(
-            `${config.apiUrl}/api/sessions/${sessionId}/status`
-          );
+          const statusUrl = isDockerMode
+            ? `${config.apiUrl}/api/docker/sessions/${sessionId}/status`
+            : `${config.apiUrl}/api/sessions/${sessionId}/status`;
+
+          const response = await fetch(statusUrl);
           if (response.ok) {
             const data = await response.json();
             if (data.completed) {
@@ -139,7 +140,6 @@ function App() {
           level: dockerData.level,
           port: dockerData.port,
           ttyd_token: dockerData.ttyd_token,
-          terminal_url: dockerData.terminal_url,
         };
       } else {
         // Default mode: use standard sessions API
