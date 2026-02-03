@@ -29,9 +29,9 @@ intro: |
   After creating, test it by asking: "Explain the models.py file"
 
 verification:
-  - type: tool_called_with_path
-    tool_name: Write
-    pattern: "\\.claude/skills/.*SKILL\\.md"
+  - type: glob_exists
+    pattern: ".claude/skills/*/SKILL.md"
+    description: "Create a skill file"
 
 success: |
   You created an auto-activating skill!
