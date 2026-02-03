@@ -110,6 +110,26 @@ class SandboxManager:
                 self.available_ports.add(port)
             raise
 
+    async def update_session_level(self, session_id: str, level_number: int) -> dict:
+        """Update an existing session to a new level without creating a new container."""
+        session = self.sessions.get(session_id)
+        if not session:
+            raise ValueError(f"Session {session_id} not found")
+
+        sandbox: DockerSandbox = session["sandbox"]
+        await sandbox.update_level(level_number)
+
+        async with self._lock:
+            session["level_number"] = level_number
+            session["last_active"] = datetime.now()
+
+        logger.info(f"Session {session_id} updated to level {level_number}")
+        return {
+            "session_id": session_id,
+            "port": session["port"],
+            "ttyd_token": sandbox.get_ttyd_token(),
+        }
+
     async def destroy_session(self, session_id: str) -> None:
         """Destroy a sandbox session.
 

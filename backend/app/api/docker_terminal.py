@@ -13,6 +13,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+class UpdateLevelRequest(BaseModel):
+    """Request to update session level."""
+
+    level_number: int
+
+
 class CreateSessionRequest(BaseModel):
     """Request to create a new session."""
 
@@ -79,6 +85,41 @@ async def delete_session(session_id: str):
 
     await sandbox_manager.destroy_session(session_id)
     return {"session_id": session_id, "status": "deleted"}
+
+
+@router.patch("/api/docker/sessions/{session_id}/level")
+async def update_session_level(session_id: str, request: UpdateLevelRequest):
+    """Update an existing session to a new level (reuses container)."""
+    session = sandbox_manager.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    level = load_level_by_number(request.level_number)
+    if not level:
+        raise HTTPException(
+            status_code=404, detail=f"Level {request.level_number} not found"
+        )
+
+    try:
+        result = await sandbox_manager.update_session_level(
+            session_id, request.level_number
+        )
+    except Exception as e:
+        logger.error(f"Failed to update level: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to update level")
+
+    return {
+        "session_id": session_id,
+        "port": result["port"],
+        "terminal_url": f"http://localhost:{result['port']}/",
+        "ttyd_token": result["ttyd_token"],
+        "level": {
+            "number": level.number,
+            "title": level.title,
+            "module": level.module,
+            "intro": level.intro,
+        },
+    }
 
 
 @router.post("/api/docker/sessions/{session_id}/heartbeat")

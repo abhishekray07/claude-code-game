@@ -204,6 +204,38 @@ class DockerSandbox:
         logger.debug(f"Read {len(messages)} messages from log for session {self.session_id}")
         return messages
 
+    async def update_level(self, level_number: int) -> None:
+        """Swap exercise files for a new level in the running container."""
+        if not self.container:
+            raise ValueError("Container not created")
+
+        self.level_number = level_number
+        level_num = f"{level_number:02d}"
+
+        cmd = f'''
+        LEVEL_DIR=$(find /home/claude/levels -maxdepth 1 -type d -name "{level_num}-*" 2>/dev/null | head -1)
+        if [ -n "$LEVEL_DIR" ] && [ -d "$LEVEL_DIR/exercise" ]; then
+            rm -rf /home/claude/workspace/*
+            rm -rf /home/claude/workspace/.claude 2>/dev/null || true
+            rm -rf /home/claude/workspace/.git 2>/dev/null || true
+            cp -r "$LEVEL_DIR/exercise/"* /home/claude/workspace/
+            cp -r "$LEVEL_DIR/exercise/".* /home/claude/workspace/ 2>/dev/null || true
+            chown -R claude:claude /home/claude/workspace
+        fi
+        '''
+
+        exit_code, output = await asyncio.to_thread(
+            self.container.exec_run,
+            ["sh", "-c", cmd],
+            user="root"
+        )
+
+        if exit_code != 0:
+            logger.error(f"Failed to update level files: {output.decode('utf-8')}")
+            raise RuntimeError(f"Failed to update level to {level_number}")
+
+        logger.info(f"Updated container {self.session_id} to level {level_number}")
+
     async def terminate(self) -> None:
         """Stop and remove the container."""
         if self.container:
