@@ -100,6 +100,16 @@ class VerificationEngine:
 
         return False
 
+    def _get_workspace_path(self, path: str) -> str:
+        """Get the full workspace path for a relative path."""
+        if path.startswith("/"):
+            return path
+        # Docker and Fly use /home/claude/workspace
+        if hasattr(self.sandbox, 'container') or hasattr(self.sandbox, 'machine_id'):
+            return f"/home/claude/workspace/{path}"
+        # Modal uses /workspace
+        return f"/workspace/{path}"
+
     async def _check_file_exists(self, path: str | None) -> bool:
         """Check if a file exists in sandbox."""
         if not path:
@@ -113,8 +123,8 @@ class VerificationEngine:
             logger.debug(f"file_exists check: {file_path} -> {exists}")
             return exists
 
-        # Fallback for Modal sandbox
-        full_path = f"/workspace/{path}" if not path.startswith("/") else path
+        # Fallback for Modal/Fly sandbox
+        full_path = self._get_workspace_path(path)
         stdout, stderr, returncode = await self.sandbox.exec_command(
             "test", "-f", full_path
         )
@@ -137,12 +147,15 @@ class VerificationEngine:
             logger.debug(f"file_contains check: {file_path} pattern={pattern} -> {matches}")
             return matches
 
-        # Fallback for Modal sandbox
-        full_path = f"/workspace/{path}" if not path.startswith("/") else path
+        # Fallback for Modal/Fly sandbox
+        full_path = self._get_workspace_path(path)
         stdout, stderr, returncode = await self.sandbox.exec_command("cat", full_path)
         if returncode != 0:
+            logger.debug(f"file_contains check: cat {full_path} failed: {stderr}")
             return False
-        return bool(re.search(pattern, stdout))
+        matches = bool(re.search(pattern, stdout))
+        logger.debug(f"file_contains check: {full_path} pattern='{pattern}' -> {matches} (content length: {len(stdout)})")
+        return matches
 
     async def _check_file_changed(self, path: str | None) -> bool:
         """Check if file was modified (via Edit tool in messages)."""
@@ -166,12 +179,18 @@ class VerificationEngine:
 
     async def _check_commit_exists(self, pattern: str | None) -> bool:
         """Check if a git commit exists (optionally matching message pattern)."""
-        if not self.sandbox.workspace_dir:
+        # For LocalSandbox, check workspace_dir
+        if hasattr(self.sandbox, 'workspace_dir') and self.sandbox.workspace_dir:
+            stdout, stderr, returncode = await self.sandbox.exec_command(
+                "git", "log", "--oneline", "-n", "10"
+            )
+        elif hasattr(self.sandbox, 'machine_id'):  # FlySandbox
+            stdout, stderr, returncode = await self.sandbox.exec_command(
+                "bash", "-c", "cd /home/claude/workspace && git log --oneline -n 10"
+            )
+        else:
             return False
 
-        stdout, stderr, returncode = await self.sandbox.exec_command(
-            "git", "log", "--oneline", "-n", "10"
-        )
         if returncode != 0:
             return False
 
@@ -184,10 +203,15 @@ class VerificationEngine:
         if not command:
             return False
 
-        import shlex
-        args = shlex.split(command)
-
-        stdout, stderr, returncode = await self.sandbox.exec_command(*args)
+        # For Fly, wrap command to run in workspace directory
+        if hasattr(self.sandbox, 'machine_id'):  # FlySandbox
+            stdout, stderr, returncode = await self.sandbox.exec_command(
+                "bash", "-c", f"cd /home/claude/workspace && {command}"
+            )
+        else:
+            import shlex
+            args = shlex.split(command)
+            stdout, stderr, returncode = await self.sandbox.exec_command(*args)
 
         if expected:
             return bool(re.search(expected, stdout + stderr))
@@ -199,7 +223,9 @@ class VerificationEngine:
             return True
 
         messages = await self.sandbox.read_messages_log()
-        user_count = sum(1 for m in messages if m.get("type") == "human")
+        # Claude Code uses "type": "user" for user messages (not "human")
+        user_count = sum(1 for m in messages if m.get("type") == "user")
+        logger.debug(f"min_user_messages check: found {user_count} user messages, need {min_count}, total messages: {len(messages)}")
         return user_count >= min_count
 
     async def _check_glob_exists(self, pattern: str | None) -> bool:
@@ -215,9 +241,13 @@ class VerificationEngine:
             logger.debug(f"glob_exists check: {full_pattern} -> {len(matches)} matches")
             return len(matches) > 0
 
-        # Fallback for Modal sandbox - use find command
+        # Fallback for Modal/Fly sandbox - use find command
+        if hasattr(self.sandbox, 'machine_id'):  # FlySandbox
+            workspace = "/home/claude/workspace"
+        else:
+            workspace = "/workspace"
         stdout, stderr, returncode = await self.sandbox.exec_command(
-            "find", "/workspace", "-path", f"/workspace/{pattern}", "-type", "f"
+            "find", workspace, "-path", f"{workspace}/{pattern}", "-type", "f"
         )
         return bool(stdout.strip())
 
@@ -226,14 +256,25 @@ class VerificationEngine:
         if not pattern:
             return False
 
-        import glob
-        from pathlib import Path
+        # For LocalSandbox, check local filesystem
+        if hasattr(self.sandbox, 'workspace_dir') and self.sandbox.workspace_dir:
+            import glob
+            from pathlib import Path
+            home_dir = Path.home()
+            full_pattern = str(home_dir / ".claude" / pattern)
+            matches = glob.glob(full_pattern, recursive=True)
+            logger.debug(f"home_glob_exists check: {full_pattern} -> {len(matches)} matches")
+            return len(matches) > 0
 
-        home_dir = Path.home()
-        full_pattern = str(home_dir / ".claude" / pattern)
-        matches = glob.glob(full_pattern, recursive=True)
-        logger.debug(f"home_glob_exists check: {full_pattern} -> {len(matches)} matches")
-        return len(matches) > 0
+        # For Modal/Fly sandbox - use find command on remote
+        if hasattr(self.sandbox, 'machine_id'):  # FlySandbox
+            claude_dir = "/home/claude/.claude"
+        else:
+            claude_dir = "/root/.claude"
+        stdout, stderr, returncode = await self.sandbox.exec_command(
+            "find", claude_dir, "-path", f"{claude_dir}/{pattern}", "-type", "f"
+        )
+        return bool(stdout.strip())
 
     async def _check_tool_called_with_path(self, tool_name: str | None, path_pattern: str | None) -> bool:
         """Check if a tool was called with a file_path matching the pattern."""
