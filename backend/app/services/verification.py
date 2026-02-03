@@ -31,6 +31,7 @@ class VerificationEngine:
                 "passed": passed,
                 "tool_name": rule.tool_name,
                 "path": rule.path,
+                "description": rule.description,
             })
         return {
             "rules": results,
@@ -184,7 +185,7 @@ class VerificationEngine:
             stdout, stderr, returncode = await self.sandbox.exec_command(
                 "git", "log", "--oneline", "-n", "10"
             )
-        elif hasattr(self.sandbox, 'machine_id'):  # FlySandbox
+        elif hasattr(self.sandbox, 'container') or hasattr(self.sandbox, 'machine_id'):
             stdout, stderr, returncode = await self.sandbox.exec_command(
                 "bash", "-c", "cd /home/claude/workspace && git log --oneline -n 10"
             )
@@ -203,8 +204,8 @@ class VerificationEngine:
         if not command:
             return False
 
-        # For Fly, wrap command to run in workspace directory
-        if hasattr(self.sandbox, 'machine_id'):  # FlySandbox
+        # For Docker/Fly, wrap command to run in workspace directory
+        if hasattr(self.sandbox, 'container') or hasattr(self.sandbox, 'machine_id'):
             stdout, stderr, returncode = await self.sandbox.exec_command(
                 "bash", "-c", f"cd /home/claude/workspace && {command}"
             )
