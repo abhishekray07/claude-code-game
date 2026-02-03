@@ -33,6 +33,7 @@ intro: |
 
 verification:
   - type: glob_exists
+    description: "Create a hook script"
     pattern: ".claude/hooks/*.sh"
 
 success: |
