@@ -10,8 +10,5 @@ if [ -n "$LEVEL_DIR" ] && [ -d "$LEVEL_DIR/exercise" ]; then
     cp -r "$LEVEL_DIR/exercise/"* /home/claude/workspace/
 fi
 
-# Generate random token if not provided
-TTYD_TOKEN="${TTYD_TOKEN:-$(head -c 16 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 24)}"
-
-# Start ttyd with token authentication
-exec ttyd -p 7681 -c "user:${TTYD_TOKEN}" bash -l
+# Start ttyd without authentication (port only accessible on localhost via Docker port mapping)
+exec ttyd -p 7681 bash -l

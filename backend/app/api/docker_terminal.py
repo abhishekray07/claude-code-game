@@ -58,7 +58,7 @@ async def create_session(request: CreateSessionRequest):
     return CreateSessionResponse(
         session_id=session_id,
         port=result["port"],
-        terminal_url=f"ws://localhost:{result['port']}/ws",
+        terminal_url=f"http://localhost:{result['port']}/",
         ttyd_token=result["ttyd_token"],
         level={
             "number": level.number,
@@ -101,6 +101,6 @@ async def get_session(session_id: str):
     return {
         "session_id": session_id,
         "port": session["port"],
-        "terminal_url": f"ws://localhost:{session['port']}/ws",
+        "terminal_url": f"http://localhost:{session['port']}/",
         "level_number": session["level_number"],
     }

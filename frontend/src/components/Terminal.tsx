@@ -8,7 +8,7 @@ import { config } from "../config";
 
 interface TerminalProps {
   sessionId: string;
-  ttydUrl?: string; // If provided, use iframe mode (Fly.io/Docker)
+  ttydUrl?: string; // If provided, use iframe mode (Fly.io)
   ttydPort?: number; // For Docker mode: port where ttyd is running
   ttydToken?: string; // For Docker mode: authentication token
   onReady?: () => void;
@@ -32,14 +32,10 @@ function IframeTerminal({
   // Determine the URL to use
   // For Docker mode: construct URL with basic auth
   // For Fly.io mode: use the provided ttydUrl directly
-  //
-  // SECURITY NOTE: Credentials in URL is acceptable for LOCAL DEVELOPMENT ONLY.
-  // The ttyd token is ephemeral (per-session) and the URL is localhost.
-  // For production deployment, use a backend proxy or cookie-based auth.
   const terminalUrl = ttydUrl
     ? ttydUrl
-    : ttydPort && ttydToken
-      ? `http://user:${ttydToken}@localhost:${ttydPort}/`
+    : ttydPort
+      ? `http://localhost:${ttydPort}/`
       : null;
 
   useEffect(() => {
@@ -84,7 +80,7 @@ function IframeTerminal({
   );
 }
 
-// WebSocket-based terminal for local/Modal/Fly mode
+// WebSocket-based terminal for local/Modal mode
 function WebSocketTerminal({
   sessionId,
   onReady,
