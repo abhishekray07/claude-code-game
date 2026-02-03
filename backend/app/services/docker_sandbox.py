@@ -93,7 +93,7 @@ class DockerSandbox:
                 "LEVEL_NUMBER": str(self.level_number),
                 "TTYD_TOKEN": self.ttyd_token,
             },
-            ports={"7681/tcp": self.port},
+            ports={"7681/tcp": ("127.0.0.1", self.port)},
         )
 
         container_id = self.container.id
@@ -233,3 +233,4 @@ class DockerSandbox:
             The token required to authenticate with ttyd, or None if not created.
         """
         return self.ttyd_token
+
