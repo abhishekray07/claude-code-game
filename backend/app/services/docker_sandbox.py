@@ -218,6 +218,7 @@ class DockerSandbox:
             rm -rf /home/claude/workspace/*
             rm -rf /home/claude/workspace/.claude 2>/dev/null || true
             rm -rf /home/claude/workspace/.git 2>/dev/null || true
+            rm -rf /home/claude/.claude/projects 2>/dev/null || true
             cp -r "$LEVEL_DIR/exercise/"* /home/claude/workspace/
             cp -r "$LEVEL_DIR/exercise/".* /home/claude/workspace/ 2>/dev/null || true
             chown -R claude:claude /home/claude/workspace
