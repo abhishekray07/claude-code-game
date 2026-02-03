@@ -34,6 +34,7 @@ intro: |
 
 verification:
   - type: glob_exists
+    description: "Create a spec in specs/"
     pattern: "specs/*.md"
 
 success: |

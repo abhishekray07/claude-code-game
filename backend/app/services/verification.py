@@ -242,15 +242,15 @@ class VerificationEngine:
             logger.debug(f"glob_exists check: {full_pattern} -> {len(matches)} matches")
             return len(matches) > 0
 
-        # Fallback for Modal/Fly sandbox - use find command
-        if hasattr(self.sandbox, 'machine_id'):  # FlySandbox
+        # For Docker/Fly sandbox - use find command
+        if hasattr(self.sandbox, 'container') or hasattr(self.sandbox, 'machine_id'):
             workspace = "/home/claude/workspace"
         else:
             workspace = "/workspace"
         stdout, stderr, returncode = await self.sandbox.exec_command(
             "find", workspace, "-path", f"{workspace}/{pattern}", "-type", "f"
         )
-        return bool(stdout.strip())
+        return returncode == 0 and bool(stdout.strip())
 
     async def _check_home_glob_exists(self, pattern: str | None) -> bool:
         """Check if any file matches glob pattern in ~/.claude/ directory."""
@@ -267,15 +267,15 @@ class VerificationEngine:
             logger.debug(f"home_glob_exists check: {full_pattern} -> {len(matches)} matches")
             return len(matches) > 0
 
-        # For Modal/Fly sandbox - use find command on remote
-        if hasattr(self.sandbox, 'machine_id'):  # FlySandbox
+        # For Docker/Fly sandbox - use find command on remote
+        if hasattr(self.sandbox, 'container') or hasattr(self.sandbox, 'machine_id'):
             claude_dir = "/home/claude/.claude"
         else:
             claude_dir = "/root/.claude"
         stdout, stderr, returncode = await self.sandbox.exec_command(
             "find", claude_dir, "-path", f"{claude_dir}/{pattern}", "-type", "f"
         )
-        return bool(stdout.strip())
+        return returncode == 0 and bool(stdout.strip())
 
     async def _check_tool_called_with_path(self, tool_name: str | None, path_pattern: str | None) -> bool:
         """Check if a tool was called with a file_path matching the pattern."""
