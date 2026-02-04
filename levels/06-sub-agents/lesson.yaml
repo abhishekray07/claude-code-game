@@ -1,5 +1,5 @@
 id: "sub-agents"
-number: 4
+number: 6
 module: "Building Blocks"
 title: "Sub-Agents for Context Isolation"
 
