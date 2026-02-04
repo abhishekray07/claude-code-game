@@ -9,38 +9,33 @@ video:
 
 exercise:
   intro: |
-    Claude doesn't know your project yet. Create CLAUDE.md to fix that.
+    Claude forgets everything between sessions. CLAUDE.md is how you fix that.
   objective: "Create a CLAUDE.md that gives Claude persistent project context"
 
 intro: |
   Claude has zero memory between sessions. CLAUDE.md fixes this.
 
-  It's loaded automatically at the start of every session.
+  It's loaded automatically at the start of every conversation.
 
   Experiment:
 
   1. Start Claude: `claude`
   2. Ask: "How do I run the tests for this project?"
-     → Claude doesn't know. It has to read files to figure it out.
-  3. Now create CLAUDE.md with project context.
+     → Claude doesn't know. It has to scan through your code to figure it out.
+  3. Run: `/init`
+     → Claude scans your project and creates CLAUDE.md for you.
+  4. Exit Claude (Ctrl+C or type "exit")
+  5. Start a new session: `claude`
+  6. Ask the same question: "How do I run the tests?"
+     → Claude knows immediately — it read CLAUDE.md on startup.
 
-     Type: "Create a CLAUDE.md file with:
-     - What this project is (1-2 sentences)
-     - The tech stack (Python + SQLite)
-     - How to run the app: python main.py
-     - How to test: pytest -v
-     - Code conventions: use type hints, keep functions focused"
+  Think of CLAUDE.md as your project's memory:
+  - What would a new teammate need to know on day one?
+  - What mistakes do people keep making?
+  - What's non-obvious about your setup?
 
-  4. Exit Claude (Esc twice) and start a new session: `claude`
-  5. Ask the same question: "How do I run the tests?"
-     → Claude knows immediately from CLAUDE.md.
-
-  Important: Keep CLAUDE.md under 40-60 lines.
-  Claude's system prompt has ~50 instructions already. Models follow
-  about 150-200 total. Every line you add competes for attention.
-
-  Rule of thumb: If Claude can figure it out by reading your code,
-  don't put it in CLAUDE.md.
+  Keep it under 40-60 lines. Claude's system prompt already has ~50
+  instructions. Every line you add competes for attention.
 
 verification:
   - type: file_contains
@@ -56,7 +51,7 @@ success: |
   - Include: stack, commands, conventions, gotchas
   - Exclude: anything Claude can figure out from code
   - Every "Don't X" should include "Do Y instead"
-  - Update it when Claude makes a mistake (self-improvement loop)
+  - Update it when Claude makes repeated mistakes
 
   CLAUDE.md is the highest-leverage file in your project.
 
