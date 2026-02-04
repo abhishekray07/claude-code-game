@@ -4,7 +4,7 @@ This test file includes intentionally failing tests that students fix
 during the course:
 
 - test_add_negative_amount_should_fail: Fails until Lesson 3 (validation bug)
-- test_list_by_category_case_insensitive: Fails until Lesson 4 (case bug)
+- test_list_by_category_case_insensitive: Fails until a later lesson (case bug)
 """
 
 import pytest
@@ -147,13 +147,13 @@ class TestListExpenses:
         assert dates == sorted(dates, reverse=True)
 
     # =========================================================
-    # BUG TESTS - These fail until students fix them in Lesson 4
+    # BUG TESTS - These fail until students fix them in a later lesson
     # =========================================================
 
     def test_list_by_category_case_insensitive(self, mixed_case_expenses):
         """BUG TEST: Category filter should be case-insensitive.
 
-        This test FAILS initially - students fix this in Lesson 4.
+        This test FAILS initially - students fix this in a later lesson.
 
         The seed data includes lowercase "food" entries that won't
         match "Food" until the bug is fixed.
