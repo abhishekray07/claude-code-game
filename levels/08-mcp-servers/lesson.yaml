@@ -1,7 +1,7 @@
 id: "mcp-servers"
 number: 8
 module: "Extensions"
-title: "MCP Servers for Documentation"
+title: "MCP Servers (External Sources)"
 
 video:
   url: "https://vimeo.com/placeholder"
@@ -9,42 +9,50 @@ video:
 
 exercise:
   intro: |
-    Connect Claude to external tools using MCP (Model Context Protocol).
-    You'll add context7 for up-to-date library documentation.
-  objective: "Install context7 MCP server and use it to look up docs"
+    Connect Claude to external data sources using MCP (Model Context Protocol).
+  objective: "Install an MCP server and use it to fetch external data"
 
 intro: |
-  MCP servers give Claude access to external tools and data.
+  MCP servers connect Claude to external tools and data sources.
 
-  context7 provides up-to-date documentation for libraries/frameworks.
-  No more outdated training data!
+  Remember Lesson 1? Claude trusted outdated Firecrawl docs and wrote
+  broken v1 code. MCP servers solve this — they let Claude fetch live
+  data from external sources.
 
-  Install context7:
+  Let's fix Lesson 1's problem with context7 (a documentation MCP):
 
-  Type: claude
+  1. Start Claude: `claude`
+  2. Install context7:
+     "Add the context7 MCP server using:
+     claude mcp add context7 -- npx -y @upstash/context7-mcp@latest"
+  3. IMPORTANT: Exit Claude (Ctrl+C) and restart it.
+     MCP tools only load on startup — you must restart to use them.
+  4. Now ask the SAME question from Lesson 1:
+     "Write a function that scrapes a URL using the Firecrawl Python SDK"
+  5. Watch Claude fetch the current Firecrawl docs via context7
+     → It should use the correct v2 API (Firecrawl, scrape, etc.)
+     → Not the outdated v1 API from the docs/ folder
 
-  Say: "Add the context7 MCP server using:
-  claude mcp add context7 -- npx -y @upstash/context7-mcp@latest"
-
-  After installing, test it:
-
-  Say: "Look up the FastAPI documentation for creating routes"
-
-  Claude will fetch current docs instead of relying on training data.
+  The MCP gives Claude access to current documentation automatically.
 
 verification:
   - type: message_exists
 
 success: |
-  You connected Claude to external documentation!
+  You connected Claude to live documentation!
 
-  MCP servers extend Claude's capabilities:
-  - context7: Library documentation
-  - postgres: Database access
+  Compare to Lesson 1:
+  - Without MCP: Claude used outdated docs → broken v1 code
+  - With context7: Claude fetched current docs → correct v2 code
+
+  MCP servers extend Claude's reach beyond its training data:
+  - context7: Live library documentation
+  - postgres: Database queries
   - github: Repository management
-  - And many more...
+  - slack: Team communication
 
-  Verify with: claude mcp list
+  Any API can become an MCP server. Check your servers:
+  claude mcp list
 
 limits:
   max_duration_minutes: 15
