@@ -11,7 +11,7 @@ import {
 } from "./hooks/useVerificationProgress";
 import { config } from "./config";
 
-const TOTAL_LESSONS = 9; // Lessons 1-9
+const TOTAL_LESSONS = 11; // Lessons 1-11
 const STATUS_POLL_INTERVAL = 5000; // 5 seconds
 
 interface Video {
