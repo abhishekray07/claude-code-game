@@ -15,15 +15,20 @@ exercise:
 intro: |
   Sub-agents = fresh context window. Parent gets a clean summary.
 
+  Remember Lesson 1? Context is finite. Sub-agents solve that.
+
   You want to understand how the reporting module works, but don't
   want all those details filling your main context.
 
   Type: claude
 
+  First, run /context to see your current context usage.
+
   Say: "Use a sub-agent to analyze reports.py and summarize how it
   generates reports. I just want a summary, not all the details."
 
-  After, run /context to see your context stayed clean.
+  After getting the summary, run /context again.
+  Your main context should barely have moved.
 
 verification:
   - type: message_exists
