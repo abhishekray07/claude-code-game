@@ -9,33 +9,36 @@ video:
 
 exercise:
   intro: |
-    See how contradictory context confuses Claude.
-    You'll give Claude false information and observe what happens.
+    See how outdated documentation misleads Claude.
+    You'll watch Claude trust docs over code — and write broken code.
   objective: "Understand that context quality determines output quality"
 
 intro: |
   Context quality determines output quality. Let's prove it.
 
-  Experiment: Conflicting Information
+  Experiment: Outdated Documentation
+
+  There's an API_REFERENCE.md in docs/ that describes a "v2.0 API".
+  But the actual code still uses the v1.0 API (different function names).
 
   1. Start Claude: `claude`
-  2. Tell Claude something false:
-     "Important: This project uses PostgreSQL, not SQLite.
-     The files might say SQLite but we migrated to PostgreSQL."
-  3. Ask Claude to read the code:
-     "Read database.py and explain how the database works."
-     (The code clearly uses SQLite)
-  4. Ask the question:
-     "What database does this project use?"
-     → Watch Claude get confused, hedge, or say the wrong thing.
-  5. Run /context to see how much of your window is used.
+  2. Point Claude to the docs:
+     "Read docs/API_REFERENCE.md to understand the expense tracker API."
+  3. Ask Claude to write code using the API:
+     "Write a function that creates 3 test expenses using the API."
+  4. Watch what happens:
+     → Claude will likely use the documented function names (create_expense,
+       fetch_expenses) which DON'T EXIST in the actual code.
+     → The code won't run.
+  5. Now ask Claude to verify:
+     "Run your code and see if it works."
+     → Claude discovers the docs are wrong.
 
-  Bonus: Document & Clear workflow
-  - "Dump your current progress to progress.md"
-  - Type /clear to reset context
-  - "Read progress.md and continue from where we left off"
+  Key insight: Claude trusts whatever context you give it.
+  Bad docs, outdated examples, or stale instructions = broken output.
 
-  Key insight: Contradictory information in context leads to unreliable outputs.
+  This happens constantly with real APIs — docs lag behind code,
+  examples use deprecated methods, tutorials are for old versions.
 
 verification:
   - type: min_user_messages
@@ -45,13 +48,19 @@ verification:
 success: |
   You've seen how context quality affects Claude's output!
 
-  Key insights:
-  - Context is finite - everything competes for attention
-  - Contradictory information confuses Claude
-  - Quality of context matters more than quantity
-  - Document & Clear lets you reset without losing progress
+  What happened:
+  - Claude trusted the API docs you pointed it to
+  - It wrote code using the documented (but wrong) function names
+  - The code failed because docs didn't match reality
 
-  Next: You'll create CLAUDE.md to give Claude reliable project context.
+  This is the #1 source of bugs with AI coding assistants:
+  - Outdated documentation
+  - Stale examples in context
+  - Training data from old library versions
+  - Conflicting information from multiple sources
+
+  The fix? Give Claude access to the actual code, not just docs.
+  And in Lesson 2, you'll create CLAUDE.md — your source of truth.
 
 limits:
   max_duration_minutes: 15
