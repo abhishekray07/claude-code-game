@@ -19,13 +19,14 @@ intro: |
 
   Experiment:
 
-  1. Start Claude: claude
+  1. Start Claude: `claude`
+     (First time? Paste your API key when prompted)
   2. Ask: "Write a function to calculate total expenses"
      → Notice the variable naming (likely snake_case - Python default)
   3. Exit Claude (Esc twice)
   4. Edit CLAUDE.md - add this line under Code Style:
      "Use camelCase for all variable names"
-  5. Start a NEW Claude session: claude
+  5. Start a NEW Claude session: `claude`
   6. Ask the same question: "Write a function to calculate total expenses"
      → Does Claude now use camelCase?
 
