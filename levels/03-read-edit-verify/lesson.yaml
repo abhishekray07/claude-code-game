@@ -1,0 +1,60 @@
+id: "read-edit-verify"
+number: 3
+module: "Core Loop"
+title: "Read, Edit, Verify"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    Fix a real bug and teach Claude to verify its own work.
+  objective: "Fix the negative amount bug and add verification rules to CLAUDE.md"
+
+intro: |
+  Claude's core loop: Read → Edit → Verify. Let's see it in action.
+
+  The add_expense() function has a bug - it accepts negative amounts.
+
+  1. Start Claude: `claude`
+  2. Ask Claude to fix the bug:
+     "The add_expense function in models.py allows negative amounts.
+     Fix it so amounts must be greater than 0."
+  3. Watch Claude read the file, make a surgical edit, and report done.
+  4. Now make Claude PROVE it works:
+     "Run pytest -v and confirm your fix works."
+     → Claude runs tests, sees results, fixes any remaining issues.
+  5. Finally, codify verification in CLAUDE.md:
+     "Add a Verification section to CLAUDE.md that says:
+     after any code change, run pytest -v and fix failing tests.
+     All tests must pass before considering a task complete."
+
+  This is the single highest-leverage habit: give Claude a way to
+  verify its own work. It 2-3x's the quality of output.
+
+verification:
+  - type: file_contains
+    description: "Fix negative amount validation"
+    path: "models.py"
+    pattern: "(amount\\s*<=\\s*0|amount\\s*<\\s*0|ValueError)"
+  - type: file_contains
+    description: "Add verification rules to CLAUDE.md"
+    path: "CLAUDE.md"
+    pattern: "(pytest|[Vv]erif)"
+
+success: |
+  You experienced the core loop AND taught Claude to verify its work!
+
+  What happened:
+  1. Claude READ models.py before editing (never blind edits)
+  2. Claude made a SURGICAL edit (not a full rewrite)
+  3. Claude VERIFIED by running tests
+  4. You codified verification in CLAUDE.md (permanent behavior)
+
+  From now on, Claude will check its own work every session.
+  This is the #1 tip from the Claude Code team.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 30
