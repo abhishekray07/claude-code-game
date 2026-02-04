@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Base packages + Python + Node
 RUN apt-get update && apt-get install -y \
-    ttyd curl git vim nano ca-certificates gnupg \
+    ttyd curl git vim nano ca-certificates gnupg jq \
     python3 python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/*
 

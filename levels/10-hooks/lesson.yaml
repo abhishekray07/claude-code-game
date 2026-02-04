@@ -10,8 +10,8 @@ video:
 exercise:
   intro: |
     Hooks let you intercept and validate Claude's actions.
-    You'll create safety guardrails to block dangerous commands.
-  objective: "Create hooks to block dangerous commands"
+    You'll create a hook to block dangerous commands.
+  objective: "Create a hook to block dangerous commands"
 
 intro: |
   Hooks run before/after Claude executes commands.
@@ -24,13 +24,13 @@ intro: |
 
   Create a hook to block rm -rf:
 
-  Type: claude
+  1. Start Claude: `claude`
+  2. Say: "Look up the Claude Code documentation for how to create hooks,
+     then create a hook that blocks any Bash command containing 'rm -rf'.
+     Put the script in .claude/hooks/block-dangerous.sh"
 
-  Say: "Create a pre-command hook that blocks any command containing
-  'rm -rf'. Put the script in .claude/hooks/block-dangerous.sh and
-  register it in .claude/settings.json so it runs before Bash commands."
-
-  After creating, try: rm -rf test (it should be blocked!)
+  After creating, test it by asking Claude to run: rm -rf test
+  (it should be blocked!)
 
 verification:
   - type: glob_exists
@@ -42,13 +42,14 @@ verification:
     pattern: "hooks"
 
 success: |
-  You created a safety hook!
+  You created a hook!
 
   Common hook patterns:
   - PreToolUse: Validate before tool runs
   - PostToolUse: React after tool completes
   - Block dangerous commands
-  - Require confirmation for risky ops
+  - Run linters after edits
+  - Notify on commits
 
   Hooks are your safety net for autonomous AI.
 
