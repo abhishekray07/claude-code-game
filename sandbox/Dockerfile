@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
 # Python symlink
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
+# Python packages for exercises
+RUN pip3 install pytest
+
 # Node.js 20
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
