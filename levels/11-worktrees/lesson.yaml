@@ -46,15 +46,17 @@ success: |
   Congratulations! You've completed the Claude Code course!
 
   You learned:
-  1. CLAUDE.md - Project context
-  2. Plan Mode - Think before coding
-  3. Specs - Write requirements first
-  4. Sub-agents - Context isolation
-  5. Skills - Auto-activating commands
-  6. MCP Servers - External tools
-  7. Plugins - Bundled workflows
-  8. Hooks - Safety guardrails
-  9. Worktrees - Parallel development
+  1. Context is Everything - Context quality determines output
+  2. CLAUDE.md - Persistent project memory
+  3. Read/Edit/Verify - Core loop with self-verification
+  4. Plan Mode - Think before coding
+  5. Specs - Write requirements first
+  6. Sub-agents - Context isolation
+  7. Skills - Auto-activating commands
+  8. MCP Servers - External tools
+  9. Plugins - Bundled workflows
+  10. Hooks - Safety guardrails
+  11. Worktrees - Parallel development
 
   The worktree workflow:
   init → create → work → commit → merge → cleanup
