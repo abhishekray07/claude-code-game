@@ -13,10 +13,13 @@ exercise:
   objective: "Create a code explainer skill"
 
 intro: |
-  Skills live in ~/.claude/skills/ and auto-activate based on context.
+  Skills live in .claude/skills/ and auto-activate based on context.
 
-  Commands = manual (/command-name)
-  Skills = automatic (triggered by keywords/context)
+  CLAUDE.md (Lesson 2) loads every session - it's always-on context.
+  Skills load on demand - only when Claude thinks they're relevant.
+
+  Use CLAUDE.md for things that always matter.
+  Use skills for workflow-specific instructions.
 
   Create a code explainer skill:
 
