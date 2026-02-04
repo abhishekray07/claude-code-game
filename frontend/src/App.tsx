@@ -425,7 +425,7 @@ function App() {
           <div className="level-complete">
             <p>🎉 Lesson Complete!</p>
             <p className="exit-hint">
-              Press <code>Esc</code> twice to exit Claude
+              Press <code>Ctrl+C</code> twice to exit Claude
             </p>
             {session.level.number < TOTAL_LESSONS ? (
               <button onClick={nextLevel}>Next Lesson →</button>
