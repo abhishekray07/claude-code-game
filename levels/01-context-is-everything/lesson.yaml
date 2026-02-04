@@ -18,27 +18,34 @@ intro: |
 
   Experiment: Outdated Documentation
 
-  There's an API_REFERENCE.md in docs/ that describes a "v2.0 API".
-  But the actual code still uses the v1.0 API (different function names).
+  There's a FIRECRAWL_QUICKSTART.md in docs/ that describes the v1 API.
+  But Firecrawl released v2 with breaking changes (different method names).
 
   1. Start Claude: `claude`
   2. Point Claude to the docs:
-     "Read docs/API_REFERENCE.md to understand the expense tracker API."
-  3. Ask Claude to write code using the API:
-     "Write a function that creates 3 test expenses using the API."
+     "Read docs/FIRECRAWL_QUICKSTART.md to understand the Firecrawl API."
+  3. Ask Claude to write code:
+     "Write a function that scrapes a URL and returns the markdown content,
+     using the Firecrawl SDK as documented."
   4. Watch what happens:
-     → Claude will likely use the documented function names (create_expense,
-       fetch_expenses) which DON'T EXIST in the actual code.
-     → The code won't run.
+     → Claude will likely use the documented v1 methods (scrape_url,
+       FirecrawlApp, maxDepth) which are OUTDATED.
+     → If you tried to run this code with the current SDK, it would fail.
   5. Now ask Claude to verify:
-     "Run your code and see if it works."
-     → Claude discovers the docs are wrong.
+     "Check if these method names are current in the Firecrawl v2 SDK."
+     → Claude should realize the docs describe v1, not v2.
 
   Key insight: Claude trusts whatever context you give it.
-  Bad docs, outdated examples, or stale instructions = broken output.
+  Outdated docs, stale examples, or old tutorials = broken output.
 
-  This happens constantly with real APIs — docs lag behind code,
-  examples use deprecated methods, tutorials are for old versions.
+  This happens constantly with real APIs:
+  - Docs lag behind code
+  - Tutorials use deprecated methods
+  - Stack Overflow answers are from old versions
+  - Even official quickstart guides can be outdated
+
+  The fix? When working with external APIs, ask Claude to verify
+  against the latest documentation or the actual SDK source.
 
 verification:
   - type: min_user_messages
@@ -50,17 +57,25 @@ success: |
 
   What happened:
   - Claude trusted the API docs you pointed it to
-  - It wrote code using the documented (but wrong) function names
-  - The code failed because docs didn't match reality
+  - It wrote code using the documented (but outdated) v1 API
+  - The v2 SDK uses different method names:
+    • FirecrawlApp → Firecrawl
+    • scrape_url() → scrape()
+    • crawl_url() → crawl()
+    • maxDepth → maxDiscoveryDepth
 
   This is the #1 source of bugs with AI coding assistants:
-  - Outdated documentation
-  - Stale examples in context
+  - Outdated documentation in your codebase
+  - Stale examples copied into context
   - Training data from old library versions
   - Conflicting information from multiple sources
 
-  The fix? Give Claude access to the actual code, not just docs.
-  And in Lesson 2, you'll create CLAUDE.md — your source of truth.
+  The fix? Give Claude access to current sources:
+  - Official docs (Claude can fetch URLs)
+  - The actual SDK source code
+  - Your CLAUDE.md with project-specific guidance
+
+  In Lesson 2, you'll create CLAUDE.md — your source of truth.
 
 limits:
   max_duration_minutes: 15
