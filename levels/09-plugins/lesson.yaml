@@ -18,15 +18,16 @@ intro: |
 
   Install the superpowers plugin:
 
-  1. First, register the marketplace:
+  1. Start Claude: `claude`
+
+  2. Register the marketplace (inside the Claude session):
      /plugin marketplace add obra/superpowers-marketplace
 
-  2. Then install the plugin:
+  3. Install the plugin:
      /plugin install superpowers@superpowers-marketplace
 
-  After installing, test the brainstorm skill:
-
-  Say: "I want to add a CSV export feature to this expense tracker"
+  4. Test the brainstorm skill:
+     "I want to add a CSV export feature to this expense tracker"
 
   The brainstorm skill will help you think through the design
   before jumping into implementation.
@@ -38,12 +39,12 @@ success: |
   You installed a plugin with bundled skills!
 
   The superpowers plugin includes:
-  - /brainstorm - Think through features before coding
-  - /test-driven-development - Write tests first
-  - /systematic-debugging - Debug methodically
+  - brainstorm - Think through features before coding
+  - test-driven-development - Write tests first
+  - systematic-debugging - Debug methodically
   - And more...
 
-  Plugins let you share and reuse workflows.
+  Plugins let you share and reuse workflows across projects.
 
 limits:
   max_duration_minutes: 15
