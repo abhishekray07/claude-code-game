@@ -1,0 +1,65 @@
+id: "claude-md"
+number: 2
+module: "Mental Model"
+title: "CLAUDE.md - Your Project's Memory"
+
+video:
+  url: "https://vimeo.com/placeholder"
+  duration_seconds: 300
+
+exercise:
+  intro: |
+    Claude doesn't know your project yet. Create CLAUDE.md to fix that.
+  objective: "Create a CLAUDE.md that gives Claude persistent project context"
+
+intro: |
+  Claude has zero memory between sessions. CLAUDE.md fixes this.
+
+  It's loaded automatically at the start of every session.
+
+  Experiment:
+
+  1. Start Claude: `claude`
+  2. Ask: "How do I run the tests for this project?"
+     → Claude doesn't know. It has to read files to figure it out.
+  3. Now create CLAUDE.md with project context.
+
+     Type: "Create a CLAUDE.md file with:
+     - What this project is (1-2 sentences)
+     - The tech stack (Python + SQLite)
+     - How to run the app: python main.py
+     - How to test: pytest -v
+     - Code conventions: use type hints, keep functions focused"
+
+  4. Exit Claude (Esc twice) and start a new session: `claude`
+  5. Ask the same question: "How do I run the tests?"
+     → Claude knows immediately from CLAUDE.md.
+
+  Important: Keep CLAUDE.md under 40-60 lines.
+  Claude's system prompt has ~50 instructions already. Models follow
+  about 150-200 total. Every line you add competes for attention.
+
+  Rule of thumb: If Claude can figure it out by reading your code,
+  don't put it in CLAUDE.md.
+
+verification:
+  - type: file_contains
+    description: "Create CLAUDE.md with test instructions"
+    path: "CLAUDE.md"
+    pattern: "(pytest|test)"
+
+success: |
+  You created your project's memory!
+
+  CLAUDE.md best practices:
+  - Keep it under 40-60 lines (attention budget)
+  - Include: stack, commands, conventions, gotchas
+  - Exclude: anything Claude can figure out from code
+  - Every "Don't X" should include "Do Y instead"
+  - Update it when Claude makes a mistake (self-improvement loop)
+
+  CLAUDE.md is the highest-leverage file in your project.
+
+limits:
+  max_duration_minutes: 15
+  max_claude_messages: 30
