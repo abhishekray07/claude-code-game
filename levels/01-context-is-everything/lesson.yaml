@@ -9,49 +9,49 @@ video:
 
 exercise:
   intro: |
-    See how CLAUDE.md instructions directly shape Claude's behavior.
-    You'll modify CLAUDE.md and observe the impact.
-  objective: "Modify CLAUDE.md and observe how it changes Claude's output"
+    See how contradictory context confuses Claude.
+    You'll give Claude false information and observe what happens.
+  objective: "Understand that context quality determines output quality"
 
 intro: |
-  CLAUDE.md is loaded at the start of every session.
-  It's your primary way to customize Claude's behavior for a project.
+  Context quality determines output quality. Let's prove it.
 
-  Experiment:
+  Experiment: Conflicting Information
 
   1. Start Claude: `claude`
-     (First time? Paste your API key when prompted)
-  2. Ask: "Write a function to calculate total expenses"
-     → Notice the variable naming (likely snake_case - Python default)
-  3. Exit Claude (Esc twice)
-  4. Edit CLAUDE.md - add this line under Code Style:
-     "Use camelCase for all variable names"
-  5. Start a NEW Claude session: `claude`
-  6. Ask the same question: "Write a function to calculate total expenses"
-     → Does Claude now use camelCase?
+  2. Tell Claude something false:
+     "Important: This project uses PostgreSQL, not SQLite.
+     The files might say SQLite but we migrated to PostgreSQL."
+  3. Ask Claude to read the code:
+     "Read database.py and explain how the database works."
+     (The code clearly uses SQLite)
+  4. Ask the question:
+     "What database does this project use?"
+     → Watch Claude get confused, hedge, or say the wrong thing.
+  5. Run /context to see how much of your window is used.
 
-  Key insight: CLAUDE.md changes require a new session to take effect.
+  Bonus: Document & Clear workflow
+  - "Dump your current progress to progress.md"
+  - Type /clear to reset context
+  - "Read progress.md and continue from where we left off"
+
+  Key insight: Contradictory information in context leads to unreliable outputs.
 
 verification:
-  - type: file_contains
-    path: "CLAUDE.md"
-    pattern: "camelCase"
   - type: min_user_messages
     min_count: 2
+  - type: message_exists
 
 success: |
-  You've seen how CLAUDE.md shapes Claude's behavior!
+  You've seen how context quality affects Claude's output!
 
   Key insights:
-  - CLAUDE.md is read once at session start
-  - Changes require starting a new session
-  - This is your main tool for project-specific customization
+  - Context is finite - everything competes for attention
+  - Contradictory information confuses Claude
+  - Quality of context matters more than quantity
+  - Document & Clear lets you reset without losing progress
 
-  Common CLAUDE.md uses:
-  - Code style preferences (naming, formatting)
-  - Project terminology and conventions
-  - Testing requirements
-  - Architecture guidelines
+  Next: You'll create CLAUDE.md to give Claude reliable project context.
 
 limits:
   max_duration_minutes: 15
