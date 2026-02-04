@@ -2,7 +2,7 @@
 
 This module generates expense reports with summaries and breakdowns.
 
-TODO: This module is incomplete. Students implement it in Lesson 6.
+TODO: This module is incomplete. Students implement it in Lesson 4.
 
 Features to implement:
 - Monthly expense report
@@ -34,10 +34,10 @@ def generate_monthly_report(month: Optional[str] = None) -> str:
     - Breakdown by category with percentages
     - Top 5 expenses
 
-    TODO (Lesson 6): Implement this function.
+    TODO (Lesson 4): Implement this function.
     """
     raise NotImplementedError(
-        "Implement this in Lesson 6! "
+        "Implement this in Lesson 4! "
         "The function should return a formatted report string."
     )
 
@@ -56,10 +56,10 @@ def get_category_breakdown(expenses: list["Expense"]) -> dict[str, float]:
         >>> get_category_breakdown(expenses)
         {'Food': 75.0, 'Transport': 30.0}
 
-    TODO (Lesson 6): Implement this function.
+    TODO (Lesson 4): Implement this function.
     """
     raise NotImplementedError(
-        "Implement this in Lesson 6! "
+        "Implement this in Lesson 4! "
         "Sum amounts by category and return as dict."
     )
 
@@ -74,10 +74,10 @@ def get_top_expenses(expenses: list["Expense"], n: int = 5) -> list["Expense"]:
     Returns:
         List of the N highest expenses, sorted by amount descending
 
-    TODO (Lesson 6): Implement this function.
+    TODO (Lesson 4): Implement this function.
     """
     raise NotImplementedError(
-        "Implement this in Lesson 6! "
+        "Implement this in Lesson 4! "
         "Sort by amount and return top N."
     )
 
@@ -94,10 +94,10 @@ def save_report(report: str, filename: str) -> Path:
 
     Creates the reports/ directory if it doesn't exist.
 
-    TODO (Lesson 6): Implement this function.
+    TODO (Lesson 4): Implement this function.
     """
     raise NotImplementedError(
-        "Implement this in Lesson 6! "
+        "Implement this in Lesson 4! "
         "Save to reports/{filename} and return the path."
     )
 

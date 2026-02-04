@@ -84,13 +84,13 @@ expense_tracker/
 ├── models.py         # Expense data model and core functions
 ├── database.py       # SQLite database operations
 ├── utils.py          # Helper functions (formatting, parsing)
-├── reports.py        # Report generation (Lesson 6)
+├── reports.py        # Report generation (Lesson 4)
 ├── seed_data.py      # Script to populate sample data
 ├── tests/
 │   ├── conftest.py       # Pytest fixtures
 │   ├── test_models.py    # Model tests
 │   ├── test_database.py  # Database tests
-│   └── test_reports.py   # Report tests (Lesson 6)
+│   └── test_reports.py   # Report tests (Lesson 4)
 ├── data/
 │   └── expenses.db   # SQLite database (created on first run)
 └── README.md
@@ -118,11 +118,11 @@ This codebase has intentional bugs for learning purposes:
    - `add_expense()` doesn't validate that amount > 0
    - Tests `test_add_negative_amount_should_fail` and `test_add_zero_amount_should_fail` fail
 
-2. **Case-sensitive category filtering** (Lesson 4)
+2. **Case-sensitive category filtering** (a later lesson)
    - `list_expenses(category="Food")` won't find expenses with category "food" or "FOOD"
    - Test `test_list_by_category_case_insensitive` fails
 
-3. **Reports not implemented** (Lesson 6)
+3. **Reports not implemented** (Lesson 4)
    - `reports.py` has stub functions that raise `NotImplementedError`
    - All tests in `test_reports.py` are skipped until implementation
 

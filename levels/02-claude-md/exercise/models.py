@@ -74,7 +74,7 @@ def list_expenses(
         List of matching expenses, sorted by date descending
 
     BUG: Category filtering is case-sensitive!
-    'food' won't match 'Food'. Students fix this in Lesson 4.
+    'food' won't match 'Food'. Students fix this in a later lesson.
     """
     expenses = load_expenses()
 
