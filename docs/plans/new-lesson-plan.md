@@ -2370,3 +2370,211 @@ if __name__ == "__main__":
         print(f"No verifier for lesson {lesson}")
         sys.exit(1)
 ```
+
+---
+
+## Addendum: Content Improvements (Feb 2026)
+
+Based on community research, Cohort 1 & 2 feedback, and developments from Jan 2026 (Anthropic's context engineering post, Boris Cherny's setup, HumanLayer's CLAUDE.md guide, Shrivu Shankar's feature walkthrough).
+
+### Lesson 1: Lead with Conflicting Information, Not Secret Phrase
+
+**Problem:** The secret phrase experiment is unreliable. With a 200k context window, ~1500 lines of code fills maybe 40-50% — Claude will likely remember `PURPLE_ELEPHANT_42` just fine. If the experiment doesn't show amnesia, the lesson falls flat.
+
+**Change:** Make the **conflicting information** experiment the primary exercise, secret phrase the optional bonus.
+
+The conflicting info experiment ("this project uses PostgreSQL" vs code that clearly uses SQLite) is:
+- More reliable — Claude will definitely get confused or hedge
+- Teaches the stronger 2026 lesson: **context quality > context quantity**
+- Mirrors the real problem students face — stale CLAUDE.md instructions, contradictory MCP outputs, outdated comments in code
+
+**Also add to Lesson 1:**
+
+1. **`/cost` and `/context` commands.** After the experiment, have students run both. This grounds "context is finite" in real numbers. Example prompt: "Run `/context` — how much of your window is used? Run `/cost` — how many tokens did that conversation cost?"
+
+2. **"Document & Clear" workflow.** After students see context filling up, teach the practical escape hatch:
+   ```
+   Step 1: "Claude, dump your current progress to a progress.md"
+   Step 2: /clear
+   Step 3: "Read progress.md and continue from where we left off"
+   ```
+   This is the single most useful context management workflow. Students will use it constantly. Source: [Shrivu Shankar's "Document & Clear" method](https://blog.sshh.io/p/how-i-use-every-claude-code-feature).
+
+3. **Rate limits awareness.** Brief note: "If you hit a rate limit during this course, that's normal. Smaller context = fewer tokens per turn = more turns before the limit. Everything we teach about context management has a direct cost impact." Sets expectations before students get frustrated.
+
+---
+
+### Lesson 2: Teach the CLAUDE.md Hierarchy, Not Just One File
+
+**Problem:** Current lesson only teaches creating a single flat CLAUDE.md. The community has converged on a three-level hierarchy.
+
+**Change:** Expand to teach all three levels:
+
+```
+~/.claude/CLAUDE.md     → Personal global (your preferences, applies to every project)
+.claude/CLAUDE.md       → Project-level (committed to git, shared with team)
+.claude/local.md        → Personal project overrides (gitignored, not shared)
+```
+
+**Add these key concepts:**
+
+1. **Instruction budget.** Claude Code's system prompt already contains ~50 instructions. Frontier models can reliably follow ~150-200 instructions total. Your CLAUDE.md eats into that budget. Fewer, focused instructions > long lists. Source: [HumanLayer — "Writing a Good CLAUDE.md"](https://www.humanlayer.dev/blog/writing-a-good-claude-md).
+
+2. **Progressive disclosure.** Don't put everything in CLAUDE.md. Keep task-specific docs in separate files. Tell Claude *when* to read them:
+   ```markdown
+   # In CLAUDE.md
+   For complex database operations or if you encounter a SQLite error,
+   see docs/database-guide.md for troubleshooting steps.
+   ```
+   This keeps CLAUDE.md lean while making detailed context available on demand.
+
+3. **Claude ignores irrelevant CLAUDE.md content.** The Claude Code harness includes a system reminder: "this context may or may not be relevant." More instructions = more likely Claude ignores them uniformly. This is why less is more.
+
+4. **The leverage diagram.** A bad line in CLAUDE.md affects every session. A bad line in research creates bad plans. A bad plan creates lots of bad code. Each layer amplifies errors. That's why CLAUDE.md is the highest-leverage file in your project. Source: [HumanLayer leverage diagram](https://www.humanlayer.dev/blog/writing-a-good-claude-md).
+
+**Updated practical task:**
+```
+1. Create ~/.claude/CLAUDE.md with personal preferences (5-10 lines max)
+2. Create .claude/CLAUDE.md with project context (stack, structure, commands)
+3. Create .claude/local.md for personal overrides, add to .gitignore
+4. Start a new session — see Claude automatically pick up the context
+5. Run /context — note how much of your window CLAUDE.md consumes
+```
+
+---
+
+### Lesson 3: Make Claude Verify Its Own Work
+
+**Problem:** The lesson is "Read → Edit → Verify" but "verify" means the human running tests. This misses Boris Cherny's #1 tip.
+
+**Change:** After Claude fixes the negative amount bug, add this step:
+
+```
+Step 4: Tell Claude: "Now run pytest -v and confirm your fix works."
+```
+
+Watch Claude run the tests, see the results, and (if anything fails) fix its own mistakes without you telling it what went wrong.
+
+**Teaching point:** "Claude produces dramatically better output when it can check its own work. This is why the Commands section of your CLAUDE.md matters — it gives Claude the tools to verify. If Claude can run `pytest`, `npm test`, or `cargo check`, it catches its own mistakes before you even review."
+
+Source: [Boris Cherny](https://paddo.dev/blog/how-boris-uses-claude-code/) — "Probably the most important thing to get great results: give Claude a way to verify its work. It will 2-3x the quality of the final result."
+
+**Updated CLAUDE.md connection:** After this lesson, have students add to their project CLAUDE.md:
+```markdown
+## Verification
+- After any code change, run `pytest -v` to verify
+- All tests must pass before considering a task complete
+```
+
+---
+
+### Lesson 4: Add "When to Start Over"
+
+**Problem:** Debugging is where students first get frustrated with Claude going in circles. They need to know that starting over is a tool, not a failure.
+
+**Add to Lesson 4:**
+
+After the debugging exercise, add this guidance:
+
+> **When to start over:** If Claude has been debugging for more than 3-4 rounds without progress — repeating the same fix, undoing its own changes, or getting increasingly confused — that's your signal. Don't fight a polluted context.
+>
+> 1. `/clear` the session
+> 2. Start fresh with just the error message and the relevant file
+> 3. A fresh session with focused context beats a polluted session every time
+>
+> This is not giving up. This is context engineering. You're giving Claude the best possible context to solve the problem.
+
+**Bonus:** Connect this back to Lesson 1 — "Remember the context quality curve? A 5% context with the right information beats a 60% context full of failed debugging attempts."
+
+---
+
+### Lesson 5: Introduce Plan Mode (Shift+Tab) Here
+
+**Problem:** Plan Mode isn't introduced until Lesson 6, but it's the lightweight planning tool students should learn first.
+
+**Change:** Restructure Lessons 5 and 6:
+
+- **Lesson 5: Plan Mode (lightweight planning)** — Shift+Tab twice to enter Plan Mode. Claude drafts a plan, you review, Claude implements. Best for medium-complexity tasks where you need alignment but not a full spec.
+
+- **Lesson 6: Spec-Driven Development (full planning)** — Research → Plan → Implement with separate markdown files. Best for complex/ambiguous tasks where you need thorough research before planning.
+
+**Updated Lesson 5 task:**
+```
+"You want to add recurring expenses. Before writing any code:
+1. Press Shift+Tab twice to enter Plan Mode
+2. Describe the feature: 'Add support for recurring expenses (monthly bills)'
+3. Review Claude's plan — does it cover the right files? The right approach?
+4. Go back and forth until the plan looks right
+5. Approve and let Claude implement
+
+Compare: how did having a plan change the output vs. just asking Claude to 'add recurring expenses'?"
+```
+
+**Lesson 6 stays the same** but is now framed as "for complex features, Plan Mode isn't enough — you need the full Research → Plan → Implement workflow with written specs."
+
+Boris Cherny: "Most sessions start in Plan Mode." It's the default, not the exception.
+
+---
+
+### Module 4: Swap Ordering — Commands Before Sub-Agents
+
+**Problem:** Sub-agents (Lesson 7) come before Commands (Lesson 8), but commands are more fundamental and immediately useful.
+
+**Change:** Reorder Module 4:
+
+| Current | Proposed |
+|---------|----------|
+| Lesson 7: Sub-Agents | Lesson 7: Custom Commands |
+| Lesson 8: Custom Commands | Lesson 8: Skills |
+| Lesson 9: Skills | Lesson 9: Sub-Agents |
+
+**Why:** Commands are the first building block students will actually use daily. Every student leaves Lesson 7 (new ordering) with a `/report`, `/backup`, and `/test` command they'll use in every subsequent lesson. Sub-agents make more sense after students understand commands and skills — they can then see sub-agents as a way to keep those workflows context-clean.
+
+---
+
+### Lesson 6 (Spec-Driven): Add the Leverage Diagram
+
+When teaching Research → Plan → Implement, frame *why* review at each phase matters:
+
+```
+CLAUDE.md (bad line) → affects EVERY session
+         ↓
+Research (bad finding) → creates BAD plans
+         ↓
+Plan (bad step) → creates LOTS of bad code
+         ↓
+Code (bad implementation) → bugs, rework, frustration
+```
+
+"Catching a mistake in research costs you 30 seconds. Catching it in code costs you 30 minutes. Catching it in production costs you 30 hours. Review early, review often."
+
+Source: [HumanLayer leverage diagram](https://www.humanlayer.dev/blog/writing-a-good-claude-md).
+
+---
+
+### General: Lesson-to-Session Mapping
+
+Clarify how the 12 lessons map to the 3 live sessions + async work:
+
+| Live Session | Concepts Taught Live | Async Lessons (homework) |
+|-------------|---------------------|--------------------------|
+| Session 1 (Fundamentals) | Context engineering, CLAUDE.md hierarchy, mindset | Lessons 1-4 |
+| Session 2 (Features & Tools) | MCP vs CLI, commands, skills, sub-agents | Lessons 5-9 |
+| Session 3 (Workflows & Scale) | Parallel sessions, hooks, worktrees, code review | Lessons 10-12 |
+
+Live sessions teach the *concepts* and do one demo. The async lessons are the hands-on practice on the expense tracker project. Students bring their experience back to the next live session for discussion.
+
+---
+
+### Summary of Changes
+
+| Lesson | Change | Why |
+|--------|--------|-----|
+| 1 | Lead with conflicting info experiment, add `/cost` + `/context`, add Document & Clear, add rate limits note | Reliable experiment, practical tools from day one |
+| 2 | Teach 3-level hierarchy, add instruction budget concept, add progressive disclosure | Matches community best practices |
+| 3 | Add Claude self-verification step | Boris's #1 tip, teaches feedback loop early |
+| 4 | Add "when to start over" guidance | Prevents frustration, reframes /clear as a tool |
+| 5 | Introduce Plan Mode (Shift+Tab) here | Lightweight planning before full spec-driven |
+| 6 | Add leverage diagram framing | Explains *why* review at each phase matters |
+| 7→8→9 | Reorder: Commands → Skills → Sub-Agents | Most useful tools first |
+| All | Clarify lesson-to-session mapping | Students know what's live vs async |

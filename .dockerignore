@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Virtual environments
+.venv
+venv
+__pycache__
+*.pyc
+
+# Frontend build artifacts (not needed for backend)
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# Docs and tests
+docs
+*.md
+fly-test
+spike
+
+# Fly sandbox - only include entrypoint.sh for builds
+fly-sandbox/Dockerfile
+fly-sandbox/fly.toml

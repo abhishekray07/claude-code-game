@@ -144,6 +144,15 @@ function WebSocketTerminal({
       ws.onopen = () => {
         if (!isActive) return;
         reconnectAttemptRef.current = 0; // Reset on successful connection
+
+        // ttyd requires a resize message before it sends output
+        // Client type '1': resize as JSON {"columns": N, "rows": M}
+        const dims = fitAddon.proposeDimensions();
+        if (dims) {
+          const resizeMsg = "1" + JSON.stringify({ columns: dims.cols, rows: dims.rows });
+          ws.send(resizeMsg);
+        }
+
         onReadyRef.current?.();
       };
 
@@ -234,9 +243,18 @@ function WebSocketTerminal({
     // Initial connection with small delay
     const connectTimeout = setTimeout(connect, 100);
 
-    // Handle resize
+    // Handle resize - fit terminal and notify ttyd
     const handleResize = () => {
       fitAddon.fit();
+      // Send resize to ttyd (type '1': resize)
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const dims = fitAddon.proposeDimensions();
+        if (dims) {
+          const resizeMsg = "1" + JSON.stringify({ columns: dims.cols, rows: dims.rows });
+          ws.send(resizeMsg);
+        }
+      }
     };
     window.addEventListener("resize", handleResize);
 

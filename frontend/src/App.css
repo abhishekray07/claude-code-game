@@ -392,3 +392,97 @@
   background: linear-gradient(90deg, #6366f1, #a855f7);
   transition: width 0.3s ease;
 }
+
+/* Verification Progress Checklist */
+.verification-progress {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.verification-progress h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #888;
+}
+
+.verification-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.verification-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #2a2a3a;
+  font-size: 0.9rem;
+}
+
+.verification-checklist li:last-child {
+  border-bottom: none;
+}
+
+.verification-checklist li.passed {
+  color: #4ade80;
+}
+
+.verification-checklist li.pending {
+  color: #888;
+}
+
+.verification-checklist .check-icon {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+}
+
+.verification-checklist li.passed .check-icon {
+  color: #4ade80;
+}
+
+.verification-checklist li.pending .check-icon {
+  color: #555;
+}
+
+.progress-summary {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #333;
+  font-size: 0.8rem;
+  color: #666;
+  text-align: center;
+}
+
+/* End Session Button */
+.end-session-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: transparent;
+  color: #888;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.end-session-btn:hover {
+  border-color: #f87171;
+  color: #f87171;
+}
+
+/* Completion Message */
+.completion-message {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(74, 222, 128, 0.1);
+  border-left: 3px solid #4ade80;
+  border-radius: 4px;
+  color: #4ade80;
+}
