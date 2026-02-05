@@ -1,4 +1,3 @@
-import ReactPlayer from "react-player";
 import "./VideoPlayer.css";
 
 interface VideoPlayerProps {
@@ -8,22 +7,28 @@ interface VideoPlayerProps {
 }
 
 export function VideoPlayer({ url, onEnded, onReady }: VideoPlayerProps) {
+  // Extract video ID from YouTube URL
+  const getYouTubeId = (url: string) => {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([^&?/]+)/);
+    return match ? match[1] : null;
+  };
+
+  const videoId = getYouTubeId(url);
+
+  if (!videoId) {
+    return <div className="video-player-container">Invalid video URL</div>;
+  }
+
   return (
     <div className="video-player-container">
-      <ReactPlayer
-        src={url}
+      <iframe
         width="100%"
         height="100%"
-        controls
-        onEnded={onEnded}
-        onReady={onReady}
-        config={{
-          vimeo: {
-            byline: false,
-            portrait: false,
-            title: false,
-          },
-        }}
+        src={`https://www.youtube.com/embed/${videoId}`}
+        title="Lesson video"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
       />
     </div>
   );

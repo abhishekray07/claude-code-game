@@ -72,6 +72,8 @@ async def create_session(request: CreateSessionRequest):
             "title": level.title,
             "module": level.module,
             "intro": level.intro,
+            "video": {"url": level.video.url, "duration_seconds": level.video.duration_seconds} if level.video else None,
+            "exercise": {"intro": level.exercise.intro, "objective": level.exercise.objective} if level.exercise else None,
         },
     )
 
@@ -118,6 +120,8 @@ async def update_session_level(session_id: str, request: UpdateLevelRequest):
             "title": level.title,
             "module": level.module,
             "intro": level.intro,
+            "video": {"url": level.video.url, "duration_seconds": level.video.duration_seconds} if level.video else None,
+            "exercise": {"intro": level.exercise.intro, "objective": level.exercise.objective} if level.exercise else None,
         },
     }
 
