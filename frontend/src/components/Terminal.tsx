@@ -149,30 +149,47 @@ function WebSocketTerminal({
 
       ws.onmessage = (event) => {
         if (!isActive) return;
-        let data = event.data;
+        const rawData = event.data;
 
         // Handle binary data (ArrayBuffer from ttyd)
-        if (data instanceof ArrayBuffer) {
-          if (data.byteLength === 0) return; // Ignore empty keepalive pings
-          data = new TextDecoder().decode(data);
-        }
+        if (rawData instanceof ArrayBuffer) {
+          if (rawData.byteLength === 0) return; // Ignore empty keepalive pings
 
-        // Ignore empty keepalive pings
-        if (data === "" || (data instanceof Blob && data.size === 0)) {
-          return;
-        }
+          // ttyd protocol: first byte is message type
+          // '0' (48): Input echo, '1' (49): Output, '2' (50): Window title
+          const view = new Uint8Array(rawData);
+          const msgType = view[0];
 
-        // Check for level complete marker
-        if (typeof data === "string" && data.includes("__LEVEL_COMPLETE__")) {
-          const cleanData = data.replace("__LEVEL_COMPLETE__", "");
-          if (cleanData.trim()) {
-            term.write(cleanData);
+          if (msgType === 49) {
+            // Type '1': Terminal output - write content after the type byte
+            const content = new TextDecoder().decode(view.slice(1));
+            if (content.includes("__LEVEL_COMPLETE__")) {
+              const cleanData = content.replace("__LEVEL_COMPLETE__", "");
+              if (cleanData.trim()) {
+                term.write(cleanData);
+              }
+              onLevelCompleteRef.current?.();
+              return;
+            }
+            term.write(content);
           }
-          onLevelCompleteRef.current?.();
+          // Type '2' (50): Window title - ignore
+          // Other types: ignore for now
           return;
         }
 
-        term.write(data);
+        // Handle text data (fallback)
+        if (typeof rawData === "string" && rawData.length > 0) {
+          if (rawData.includes("__LEVEL_COMPLETE__")) {
+            const cleanData = rawData.replace("__LEVEL_COMPLETE__", "");
+            if (cleanData.trim()) {
+              term.write(cleanData);
+            }
+            onLevelCompleteRef.current?.();
+            return;
+          }
+          term.write(rawData);
+        }
       };
 
       ws.onerror = () => {
@@ -206,10 +223,10 @@ function WebSocketTerminal({
         }
       };
 
-      // Send input to backend
+      // Send input to backend (ttyd protocol: prefix with '0' for input)
       term.onData((data) => {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(data);
+          ws.send("0" + data);
         }
       });
     };
