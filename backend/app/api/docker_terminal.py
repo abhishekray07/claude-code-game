@@ -1,9 +1,15 @@
 """API endpoints for Docker-based terminal sessions."""
+import asyncio
 import logging
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+
+try:
+    import websockets
+except ImportError:
+    websockets = None
 
 from app.services.sandbox_manager import sandbox_manager
 from app.services.levels import load_level_by_number
@@ -186,3 +192,118 @@ async def get_status(session_id: str):
     engine = VerificationEngine(session["sandbox"])
     completed = await engine.check_level_complete(level)
     return {"completed": completed, "session_id": session_id}
+
+
+@router.websocket("/ws/terminal/{session_id}")
+async def terminal_websocket(websocket: WebSocket, session_id: str):
+    """WebSocket proxy to local ttyd for Docker mode.
+
+    Solves VPS deployment: frontend connects to backend, backend proxies to container.
+    """
+    if websockets is None:
+        logger.error("websockets library not installed")
+        await websocket.close(code=1011, reason="Server misconfigured")
+        return
+
+    # Accept with tty subprotocol (required by ttyd)
+    await websocket.accept(subprotocol="tty")
+
+    # Look up session to get port
+    session = sandbox_manager.get_session(session_id)
+    if not session:
+        logger.warning(f"WebSocket: Session not found: {session_id}")
+        await websocket.close(code=1008, reason="Session not found")
+        return
+
+    port = session["port"]
+    target_url = f"ws://127.0.0.1:{port}/ws"
+    logger.info(f"WS proxy: {session_id} -> localhost:{port}")
+
+    connection_active = True
+
+    try:
+        async with websockets.connect(
+            target_url,
+            subprotocols=["tty"],
+            ping_interval=20,
+            ping_timeout=20,
+            close_timeout=10,
+        ) as ttyd_ws:
+            logger.info(f"Connected to ttyd for {session_id}")
+
+            async def forward_frontend_to_ttyd():
+                """Forward messages from browser to ttyd."""
+                nonlocal connection_active
+                try:
+                    while connection_active:
+                        try:
+                            data = await websocket.receive_text()
+                        except Exception:
+                            # Try receiving bytes if text fails
+                            try:
+                                data = await websocket.receive_bytes()
+                                await ttyd_ws.send(data)
+                                sandbox_manager.update_activity(session_id)
+                                continue
+                            except Exception:
+                                break
+                        sandbox_manager.update_activity(session_id)
+                        await ttyd_ws.send(data)
+                except WebSocketDisconnect:
+                    logger.info(f"Frontend disconnected: {session_id}")
+                    connection_active = False
+                except Exception as e:
+                    logger.debug(f"Frontend->ttyd ended ({session_id}): {e}")
+                    connection_active = False
+
+            async def forward_ttyd_to_frontend():
+                """Forward messages from ttyd to browser."""
+                nonlocal connection_active
+                try:
+                    async for message in ttyd_ws:
+                        if not connection_active:
+                            break
+                        sandbox_manager.update_activity(session_id)
+                        if isinstance(message, bytes):
+                            await websocket.send_bytes(message)
+                        else:
+                            await websocket.send_text(message)
+                except Exception as e:
+                    if connection_active:
+                        logger.debug(f"ttyd->Frontend ended ({session_id}): {e}")
+                    connection_active = False
+
+            async def keepalive_ping():
+                """Send periodic pings to keep frontend connection alive."""
+                nonlocal connection_active
+                try:
+                    while connection_active:
+                        await asyncio.sleep(30)
+                        if connection_active:
+                            try:
+                                await websocket.send_bytes(b"")
+                            except Exception:
+                                pass
+                except asyncio.CancelledError:
+                    pass
+
+            # Run all three tasks concurrently
+            await asyncio.gather(
+                forward_frontend_to_ttyd(),
+                forward_ttyd_to_frontend(),
+                keepalive_ping(),
+                return_exceptions=True,
+            )
+
+    except websockets.exceptions.InvalidStatusCode as e:
+        logger.warning(f"ttyd connection failed for {session_id}: {e}")
+        try:
+            await websocket.close(code=1011, reason="Container not ready")
+        except Exception:
+            pass
+    except Exception as e:
+        logger.error(f"WS proxy error for {session_id}: {type(e).__name__}: {e}")
+        try:
+            await websocket.close(code=1011, reason="Proxy error")
+        except Exception:
+            pass
