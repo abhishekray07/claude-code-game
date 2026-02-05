@@ -11,4 +11,5 @@ if [ -n "$LEVEL_DIR" ] && [ -d "$LEVEL_DIR/exercise" ]; then
 fi
 
 # Start ttyd without authentication (port only accessible on localhost via Docker port mapping)
-exec ttyd -p 7681 bash -l
+# -W: Enable writable mode (required in ttyd 1.7.4+, defaults to readonly)
+exec ttyd -W -p 7681 bash -l
