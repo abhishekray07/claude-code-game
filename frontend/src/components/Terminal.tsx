@@ -138,6 +138,7 @@ function WebSocketTerminal({
       const wsUrl = `${config.apiUrl.replace("http", "ws")}/ws/terminal/${sessionId}`;
       // ttyd requires the 'tty' subprotocol
       const ws = new WebSocket(wsUrl, ["tty"]);
+      ws.binaryType = "arraybuffer"; // Receive binary data as ArrayBuffer, not Blob
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -148,7 +149,13 @@ function WebSocketTerminal({
 
       ws.onmessage = (event) => {
         if (!isActive) return;
-        const data = event.data;
+        let data = event.data;
+
+        // Handle binary data (ArrayBuffer from ttyd)
+        if (data instanceof ArrayBuffer) {
+          if (data.byteLength === 0) return; // Ignore empty keepalive pings
+          data = new TextDecoder().decode(data);
+        }
 
         // Ignore empty keepalive pings
         if (data === "" || (data instanceof Blob && data.size === 0)) {

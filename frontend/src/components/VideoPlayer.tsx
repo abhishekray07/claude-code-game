@@ -6,7 +6,7 @@ interface VideoPlayerProps {
   onReady?: () => void;
 }
 
-export function VideoPlayer({ url, onEnded, onReady }: VideoPlayerProps) {
+export function VideoPlayer({ url, onEnded: _onEnded, onReady: _onReady }: VideoPlayerProps) {
   // Extract video ID from YouTube URL
   const getYouTubeId = (url: string) => {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([^&?/]+)/);
