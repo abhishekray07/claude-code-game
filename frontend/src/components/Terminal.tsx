@@ -15,16 +15,15 @@ interface TerminalProps {
   onLevelComplete?: () => void;
 }
 
-// Iframe-based terminal for Fly.io/Docker ttyd
+// Iframe-based terminal for Fly.io ttyd
 function IframeTerminal({
   ttydUrl,
   ttydPort,
-  ttydToken,
   onReady,
 }: {
   ttydUrl?: string;
   ttydPort?: number;
-  ttydToken?: string;
+  ttydToken?: string; // Kept for interface compatibility but unused
   onReady?: () => void;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -252,8 +251,9 @@ export function Terminal({
   onReady,
   onLevelComplete,
 }: TerminalProps) {
-  // Use iframe for Fly.io (ttydUrl provided) or Docker mode (ttydPort + ttydToken)
-  if (ttydUrl || (ttydPort && ttydToken)) {
+  // Use iframe ONLY for Fly.io (ttydUrl provided)
+  // Docker mode now uses WebSocket proxy like Modal/local
+  if (ttydUrl) {
     return (
       <IframeTerminal
         ttydUrl={ttydUrl}
@@ -264,7 +264,7 @@ export function Terminal({
     );
   }
 
-  // WebSocket mode for local/Modal
+  // WebSocket mode for Docker/Modal/local
   return (
     <WebSocketTerminal
       sessionId={sessionId}
