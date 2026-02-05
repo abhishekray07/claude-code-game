@@ -238,10 +238,8 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
                 """Forward messages from browser to ttyd."""
                 try:
                     while not shutdown_event.is_set():
-                        # Use receive() to handle both text and bytes without dropping messages
                         msg = await websocket.receive()
                         if msg["type"] == "websocket.disconnect":
-                            logger.info(f"Frontend disconnected: {session_id}")
                             break
                         data = msg.get("text") or msg.get("bytes")
                         if data is not None:
@@ -256,16 +254,10 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
 
             async def forward_ttyd_to_frontend():
                 """Forward messages from ttyd to browser."""
-                msg_count = 0
                 try:
                     async for message in ttyd_ws:
                         if shutdown_event.is_set():
                             break
-                        msg_count += 1
-                        if msg_count <= 3:
-                            # Log first few messages for debugging
-                            preview = message[:50] if isinstance(message, bytes) else message[:50]
-                            logger.info(f"ttyd msg #{msg_count} ({session_id}): {type(message).__name__} len={len(message)} preview={preview!r}")
                         sandbox_manager.update_activity(session_id)
                         if isinstance(message, bytes):
                             await websocket.send_bytes(message)
@@ -274,7 +266,6 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
                 except Exception as e:
                     if not shutdown_event.is_set():
                         logger.debug(f"ttyd->Frontend ended ({session_id}): {e}")
-                    logger.info(f"ttyd forwarded {msg_count} messages before ending ({session_id})")
                 finally:
                     shutdown_event.set()
 
@@ -303,11 +294,17 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
         logger.warning(f"ttyd connection failed for {session_id}: {e}")
         try:
             await websocket.close(code=1011, reason="Container not ready")
-        except Exception as close_exc:
-            logger.debug(f"Failed to close websocket ({session_id}): {close_exc}")
+        except Exception:
+            pass
+    except (ConnectionRefusedError, OSError) as e:
+        logger.warning(f"ttyd not reachable for {session_id}: {e}")
+        try:
+            await websocket.close(code=1011, reason="Container not responding")
+        except Exception:
+            pass
     except Exception as e:
         logger.error(f"WS proxy error for {session_id}: {type(e).__name__}: {e}")
         try:
             await websocket.close(code=1011, reason="Proxy error")
-        except Exception as close_exc:
-            logger.debug(f"Failed to close websocket ({session_id}): {close_exc}")
+        except Exception:
+            pass

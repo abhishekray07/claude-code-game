@@ -143,14 +143,15 @@ function WebSocketTerminal({
 
       ws.onopen = () => {
         if (!isActive) return;
-        reconnectAttemptRef.current = 0; // Reset on successful connection
+        reconnectAttemptRef.current = 0;
 
-        // ttyd requires a resize message before it sends output
-        // Client type '1': resize as JSON {"columns": N, "rows": M}
+        // ttyd 1.7.x protocol: send auth token first (even empty when no auth)
+        ws.send(JSON.stringify({ AuthToken: "" }));
+
+        // Then send resize so ttyd starts sending output
         const dims = fitAddon.proposeDimensions();
         if (dims) {
-          const resizeMsg = "1" + JSON.stringify({ columns: dims.cols, rows: dims.rows });
-          ws.send(resizeMsg);
+          ws.send("1" + JSON.stringify({ columns: dims.cols, rows: dims.rows }));
         }
 
         onReadyRef.current?.();
@@ -162,16 +163,16 @@ function WebSocketTerminal({
 
         // Handle binary data (ArrayBuffer from ttyd)
         if (rawData instanceof ArrayBuffer) {
-          if (rawData.byteLength === 0) return; // Ignore empty keepalive pings
+          if (rawData.byteLength === 0) return;
 
-          // ttyd protocol: first byte is message type
-          // '0' (48): Input echo, '1' (49): Output, '2' (50): Window title
+          // ttyd 1.7.x protocol: first byte is message type
+          // '0' (48): Terminal output, '1' (49): Window title, '2' (50): Preferences
           const view = new Uint8Array(rawData);
           const msgType = view[0];
+          const content = new TextDecoder().decode(view.slice(1));
 
-          if (msgType === 49) {
-            // Type '1': Terminal output - write content after the type byte
-            const content = new TextDecoder().decode(view.slice(1));
+          if (msgType === 48) {
+            // Type '0': Terminal output
             if (content.includes("__LEVEL_COMPLETE__")) {
               const cleanData = content.replace("__LEVEL_COMPLETE__", "");
               if (cleanData.trim()) {
@@ -182,8 +183,7 @@ function WebSocketTerminal({
             }
             term.write(content);
           }
-          // Type '2' (50): Window title - ignore
-          // Other types: ignore for now
+          // Types '1' (title) and '2' (preferences) are silently ignored
           return;
         }
 
