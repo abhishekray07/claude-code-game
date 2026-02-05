@@ -1,7 +1,20 @@
+# Python
 __pycache__/
 *.pyc
+*.py[cod]
+*$py.class
 .venv/
-.env
+venv/
 *.egg-info/
 dist/
 build/
+
+# Environment
+.env
+
+# Test files
+test_modal_auth.py
+
+# IDE
+.idea/
+.vscode/

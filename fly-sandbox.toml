@@ -1,0 +1,20 @@
+# fly-sandbox.toml - Fly.io configuration for Claude Code Game sandbox
+# Deploy from project root: fly deploy -c fly-sandbox.toml
+
+app = "claude-game-sandbox"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "fly-sandbox/Dockerfile"
+
+[http_service]
+  internal_port = 7681
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "2gb"
+  cpu_kind = "shared"
+  cpus = 2

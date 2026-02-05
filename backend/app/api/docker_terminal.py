@@ -238,20 +238,15 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
                 """Forward messages from browser to ttyd."""
                 try:
                     while not shutdown_event.is_set():
-                        try:
-                            data = await websocket.receive_text()
-                        except Exception as text_exc:
-                            # Try receiving bytes if text fails
-                            try:
-                                data = await websocket.receive_bytes()
-                                await ttyd_ws.send(data)
-                                sandbox_manager.update_activity(session_id)
-                                continue
-                            except Exception as bytes_exc:
-                                logger.debug(f"Receive failed ({session_id}): text={text_exc}, bytes={bytes_exc}")
-                                break
-                        sandbox_manager.update_activity(session_id)
-                        await ttyd_ws.send(data)
+                        # Use receive() to handle both text and bytes without dropping messages
+                        msg = await websocket.receive()
+                        if msg["type"] == "websocket.disconnect":
+                            logger.info(f"Frontend disconnected: {session_id}")
+                            break
+                        data = msg.get("text") or msg.get("bytes")
+                        if data is not None:
+                            sandbox_manager.update_activity(session_id)
+                            await ttyd_ws.send(data)
                 except WebSocketDisconnect:
                     logger.info(f"Frontend disconnected: {session_id}")
                 except Exception as e:
@@ -261,10 +256,16 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
 
             async def forward_ttyd_to_frontend():
                 """Forward messages from ttyd to browser."""
+                msg_count = 0
                 try:
                     async for message in ttyd_ws:
                         if shutdown_event.is_set():
                             break
+                        msg_count += 1
+                        if msg_count <= 3:
+                            # Log first few messages for debugging
+                            preview = message[:50] if isinstance(message, bytes) else message[:50]
+                            logger.info(f"ttyd msg #{msg_count} ({session_id}): {type(message).__name__} len={len(message)} preview={preview!r}")
                         sandbox_manager.update_activity(session_id)
                         if isinstance(message, bytes):
                             await websocket.send_bytes(message)
@@ -273,6 +274,7 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
                 except Exception as e:
                     if not shutdown_event.is_set():
                         logger.debug(f"ttyd->Frontend ended ({session_id}): {e}")
+                    logger.info(f"ttyd forwarded {msg_count} messages before ending ({session_id})")
                 finally:
                     shutdown_event.set()
 
