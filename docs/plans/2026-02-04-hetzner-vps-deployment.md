@@ -1,7 +1,7 @@
 # Hetzner VPS Deployment Design
 
 **Date:** 2026-02-04
-**Status:** Approved
+**Status:** Approved (v2 - with security hardening)
 **Goal:** Simple deployment for 10-15 beta users with per-session container isolation
 
 ## Architecture Overview
@@ -10,7 +10,7 @@
 ┌─────────────────┐     ┌─────────────────────────────────────────┐
 │     Vercel      │     │           Hetzner VPS (CPX21)           │
 │                 │     │                                         │
-│  React Frontend │────▶│  nginx (TLS termination)                │
+│  React Frontend │────▶│  Caddy (auto TLS)                       │
 │                 │     │       │                                 │
 └─────────────────┘     │       ▼                                 │
                         │  FastAPI Backend ◀──── WebSocket ────┐  │
@@ -28,7 +28,7 @@
 
 - **Frontend**: Stays on Vercel (free, automatic deploys from git)
 - **Hetzner CPX21**: ~€8/mo - 3 vCPU, 4GB RAM, 80GB disk
-- **nginx**: TLS termination via Let's Encrypt, proxies to backend
+- **Caddy**: Automatic TLS via Let's Encrypt, reverse proxy (simpler than nginx)
 - **FastAPI backend**: Handles REST API + WebSocket proxying to containers
 - **Docker containers**: One per session, each running ttyd + Claude CLI
 
@@ -47,13 +47,14 @@
 
 1. Backend receives `POST /api/sessions` with `{api_key, level_number, access_code}`
 2. Validates access code against `DEMO_ACCESS_CODE` env var
-3. Starts container from local `claude-game-sandbox:latest` image
-4. Container config:
+3. **Check global session cap** - return 503 "server full" if at max (e.g., 5 concurrent)
+4. Starts container from local `claude-game-sandbox:latest` image
+5. Container config:
    - `LEVEL_NUMBER` env var set
-   - Mapped to localhost port (10001-10100 range)
-   - No network restrictions (Claude needs Anthropic API access)
-5. Writes API key to container's `/home/claude/.claude/.credentials.json`
-6. Returns session ID to frontend
+   - **Bound to 127.0.0.1:PORT** (not 0.0.0.0 - prevents public exposure)
+   - Network: custom bridge with egress restrictions
+6. Writes API key to container's `/home/claude/.claude/.credentials.json` via **tmpfs mount**
+7. Returns session ID to frontend
 
 ### Cleanup Rules
 
@@ -61,23 +62,64 @@
 - **Hard cap**: 2 hours regardless of activity
 - **Background task**: Runs every 60 seconds, enforces both conditions
 - **Cleanup action**: `docker stop` + `docker rm`, remove session from memory
+- **Heartbeat**: Backend sends WebSocket ping every 30s, tracks last pong for idle detection
+- **Startup cleanup**: On backend start, kill all `sandbox-*` containers (handles restarts)
 
 ### Resource Limits (per container)
 
-```yaml
-mem_limit: 1g
-cpus: 1.0
-pids_limit: 100
+```bash
+docker run \
+  --name sandbox-${SESSION_ID} \
+  --memory=1g \
+  --cpus=1.0 \
+  --pids-limit=100 \
+  --storage-opt size=2G \
+  --cap-drop=ALL \
+  --cap-add=CHOWN,SETUID,SETGID,NET_BIND_SERVICE \
+  --security-opt=no-new-privileges:true \
+  --read-only \
+  --tmpfs /tmp:rw,noexec,nosuid,size=256m \
+  --tmpfs /home/claude/.claude:rw,noexec,nosuid,size=64m \
+  -p 127.0.0.1:${PORT}:7681 \
+  -e LEVEL_NUMBER=${LEVEL} \
+  --network sandbox-net \
+  claude-game-sandbox:latest
 ```
 
-With 4GB RAM on the VPS, this safely supports ~3 concurrent containers with headroom for the backend.
+**Global cap**: Max 5 concurrent containers (leaves ~1.5GB for OS + backend)
+
+## Network Security
+
+### Container Network Isolation
+
+Create a dedicated Docker network with restricted egress:
+
+```bash
+# Create network
+docker network create --driver bridge sandbox-net
+
+# iptables rules (run on host)
+# Block containers from accessing host services
+iptables -I DOCKER-USER -s 172.18.0.0/16 -d 172.17.0.1 -j DROP
+iptables -I DOCKER-USER -s 172.18.0.0/16 -d 10.0.0.0/8 -j DROP
+iptables -I DOCKER-USER -s 172.18.0.0/16 -d 192.168.0.0/16 -j DROP
+
+# Allow only Anthropic API (and DNS)
+iptables -I DOCKER-USER -s 172.18.0.0/16 -d 0.0.0.0/0 -p tcp --dport 443 -j ACCEPT
+iptables -I DOCKER-USER -s 172.18.0.0/16 -d 0.0.0.0/0 -p udp --dport 53 -j ACCEPT
+```
+
+This prevents containers from:
+- Accessing the host (172.17.0.1)
+- Scanning internal networks
+- Making arbitrary outbound connections (only HTTPS allowed)
 
 ## Access Control & Security
 
 ### Frontend Gate (UX only)
 
 - Landing page shows access code input before app renders
-- Code stored in localStorage after validation
+- Code stored in sessionStorage (not localStorage - cleared on tab close)
 - Bypassable - purely for user experience
 
 ### Backend Validation (actual security)
@@ -87,13 +129,18 @@ With 4GB RAM on the VPS, this safely supports ~3 concurrent containers with head
 - Returns 403 if code doesn't match
 - Constant-time comparison to prevent timing attacks
 
-### Other Security Measures
+### Security Measures
 
-- **Rate limiting**: Max 3 concurrent sessions per IP
-- **Session IDs**: 43-char random tokens (unguessable)
-- **API keys**: Written directly to container, never logged or stored in backend
-- **Container isolation**: Non-root `claude` user, no privileged mode
-- **TLS**: Let's Encrypt cert via certbot with auto-renewal
+| Measure | Implementation |
+|---------|----------------|
+| **Rate limiting** | Max 3 concurrent sessions per IP (use `X-Forwarded-For` from Caddy) |
+| **Global cap** | Max 5 total sessions, return 503 when full |
+| **Session IDs** | 43-char random tokens (unguessable) |
+| **API keys** | Written to tmpfs, never logged, dies with container |
+| **Container isolation** | Non-root user, no-new-privileges, capability drops |
+| **Read-only root** | Container filesystem is read-only, only tmpfs writable |
+| **Network isolation** | Egress restricted to HTTPS only, no host access |
+| **TLS** | Automatic via Caddy |
 
 ### Acceptable Limitations for Beta
 
@@ -105,11 +152,59 @@ With 4GB RAM on the VPS, this safely supports ~3 concurrent containers with head
 
 ### Initial VPS Setup
 
-1. Provision Hetzner CPX21 (Ubuntu 22.04)
-2. Point domain (e.g., `api.yourdomain.com`) to VPS IP
-3. Install Docker, nginx, certbot
-4. Clone repo, build sandbox image
-5. Set up systemd service for backend
+```bash
+# 1. Provision Hetzner CPX21 (Ubuntu 22.04) via console or CLI
+
+# 2. SSH in and run initial hardening
+apt update && apt upgrade -y
+apt install -y ufw fail2ban unattended-upgrades
+
+# 3. Configure firewall
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow 22/tcp    # SSH
+ufw allow 80/tcp    # HTTP (for Caddy ACME)
+ufw allow 443/tcp   # HTTPS
+ufw enable
+
+# 4. SSH hardening
+sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+systemctl restart sshd
+
+# 5. Create deploy user
+adduser deploy
+usermod -aG sudo deploy
+usermod -aG docker deploy
+
+# 6. Enable unattended security updates
+dpkg-reconfigure -plow unattended-upgrades
+```
+
+### Install Dependencies
+
+```bash
+# Docker
+curl -fsSL https://get.docker.com | sh
+
+# Caddy
+apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+apt update && apt install caddy
+
+# Docker log rotation
+cat > /etc/docker/daemon.json << 'EOF'
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+EOF
+systemctl restart docker
+```
 
 ### Directory Structure
 
@@ -121,33 +216,46 @@ With 4GB RAM on the VPS, this safely supports ~3 concurrent containers with head
 └── .env               # Production secrets
 ```
 
-### nginx Configuration
+### Caddy Configuration
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name api.yourdomain.com;
-
-    ssl_certificate /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.yourdomain.com/privkey.pem;
-
-    location / {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_read_timeout 3600s;  # 1 hour for WebSocket
+```bash
+# /etc/caddy/Caddyfile
+api.yourdomain.com {
+    reverse_proxy localhost:8080 {
+        # Pass real client IP for rate limiting
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Real-IP {remote_host}
     }
 }
-
-server {
-    listen 80;
-    server_name api.yourdomain.com;
-    return 301 https://$server_name$request_uri;
-}
 ```
+
+That's it. Caddy handles TLS automatically.
+
+### systemd Service
+
+```ini
+# /etc/systemd/system/claude-game-backend.service
+[Unit]
+Description=Claude Code Game Backend
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/opt/claude-game/backend
+Environment=PATH=/opt/claude-game/backend/.venv/bin:/usr/local/bin:/usr/bin
+EnvironmentFile=/opt/claude-game/.env
+ExecStartPre=/usr/bin/docker rm -f $(docker ps -aq --filter "name=sandbox-") || true
+ExecStart=/opt/claude-game/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Note: `ExecStartPre` cleans up orphaned containers on restart.
 
 ### Environment Variables
 
@@ -158,6 +266,7 @@ DEMO_ACCESS_CODE=your-beta-access-code
 ALLOWED_ORIGINS=https://claude-code-game.vercel.app
 DEBUG=false
 PORT=8080
+MAX_SESSIONS=5
 ```
 
 **Frontend (Vercel):**
@@ -168,9 +277,17 @@ VITE_TERMINAL_MODE=docker
 
 ### Deploying Updates
 
-- **Backend**: SSH in → `git pull` → `sudo systemctl restart claude-game-backend`
-- **Levels changed**: Also rebuild sandbox image: `docker build -t claude-game-sandbox:latest -f sandbox/Dockerfile .`
-- **Frontend**: Push to git, Vercel auto-deploys
+```bash
+# Backend updates
+cd /opt/claude-game && git pull
+sudo systemctl restart claude-game-backend
+
+# Level changes (must rebuild sandbox image)
+docker build -t claude-game-sandbox:latest -f sandbox/Dockerfile .
+sudo systemctl restart claude-game-backend
+
+# Frontend: just push to git, Vercel auto-deploys
+```
 
 ## Operations
 
@@ -191,35 +308,69 @@ journalctl -u claude-game-backend -f
 
 # Check disk space
 df -h
+
+# Check Caddy status
+systemctl status caddy
+caddy validate --config /etc/caddy/Caddyfile
 ```
 
 ### Troubleshooting
 
 | Issue | Check |
 |-------|-------|
-| Container won't start | Docker logs, disk space |
-| WebSocket disconnects | nginx `proxy_read_timeout` setting |
-| High memory | Container `mem_limit`, cleanup frequency |
+| Container won't start | `docker logs sandbox-XXX`, disk space, port conflicts |
+| WebSocket disconnects | Backend logs, check heartbeat handling |
+| High memory | `docker stats`, reduce MAX_SESSIONS |
+| TLS not working | `caddy validate`, check DNS points to VPS |
+| Rate limiting not working | Verify `X-Forwarded-For` header in backend |
 
 ### Scaling Beyond Beta
 
 When outgrowing one VPS:
-1. **Simple**: Upgrade to bigger Hetzner box
-2. **Medium**: Move to Fly.io Machines API
-3. **Complex**: Load balancer + multiple VPS
+1. **Simple**: Upgrade to bigger Hetzner box (CPX31 = 4 vCPU, 8GB)
+2. **Medium**: Multiple VPS behind load balancer
+3. **Complex**: Kubernetes or Fly.io Machines
 
 For 10-15 beta users, single VPS has plenty of headroom.
 
 ## Implementation Checklist
 
-- [ ] Provision Hetzner CPX21
-- [ ] Configure DNS
-- [ ] Install Docker, nginx, certbot
-- [ ] Set up TLS certificate
-- [ ] Clone repo and build images
+### VPS Setup
+- [ ] Provision Hetzner CPX21 (Ubuntu 22.04)
+- [ ] Configure DNS (point `api.yourdomain.com` to VPS IP)
+- [ ] Run initial hardening (firewall, SSH, fail2ban)
+- [ ] Create deploy user
+- [ ] Enable unattended-upgrades
+
+### Software Installation
+- [ ] Install Docker with log rotation
+- [ ] Install Caddy
+- [ ] Create sandbox-net Docker network
+- [ ] Configure iptables egress rules
+
+### Application Deployment
+- [ ] Clone repo to /opt/claude-game
+- [ ] Build sandbox image
+- [ ] Create Python venv, install dependencies
+- [ ] Create .env file with secrets
 - [ ] Create systemd service
-- [ ] Configure nginx
-- [ ] Set environment variables
-- [ ] Add frontend access code gate
-- [ ] Update Vercel environment variables
-- [ ] Test end-to-end
+- [ ] Configure Caddy
+
+### Code Changes
+- [ ] Add global session cap (MAX_SESSIONS env var)
+- [ ] Bind container ports to 127.0.0.1 explicitly
+- [ ] Add startup orphan cleanup
+- [ ] Add WebSocket heartbeat/ping handling
+- [ ] Use tmpfs for credentials directory
+- [ ] Add container hardening flags to docker run
+- [ ] Parse X-Forwarded-For for rate limiting
+- [ ] Add frontend access code gate (sessionStorage)
+
+### Testing
+- [ ] Test session creation with access code
+- [ ] Test session cap (try to exceed MAX_SESSIONS)
+- [ ] Test idle timeout (wait 15 min)
+- [ ] Test hard cap (wait 2 hours)
+- [ ] Test backend restart (verify orphan cleanup)
+- [ ] Test WebSocket reconnection
+- [ ] Verify container can't access host network
