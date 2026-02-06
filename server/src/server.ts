@@ -29,9 +29,9 @@ export function createApp() {
     res.json({ status: "ok", mode: "local" });
   });
 
-  const frontendDir = path.resolve(__dirname, "../frontend/dist");
+  const frontendDir = path.resolve(__dirname, "../frontend");
   app.use(express.static(frontendDir));
-  app.get("*", (_req, res) => {
+  app.get("/{*splat}", (_req, res) => {
     res.sendFile(path.join(frontendDir, "index.html"));
   });
 
