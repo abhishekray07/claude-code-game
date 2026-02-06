@@ -26,6 +26,7 @@ async def lifespan(_app: FastAPI):
     elif settings.sandbox_mode == "docker":
         from app.services.sandbox_manager import sandbox_manager
 
+        sandbox_manager.cleanup_orphaned_containers()
         sandbox_manager.start_cleanup_task()
     yield
     if settings.sandbox_mode in ("modal", "fly"):

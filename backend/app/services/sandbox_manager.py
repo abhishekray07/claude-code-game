@@ -4,7 +4,8 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Set
 
-from app.services.docker_sandbox import DockerSandbox
+from app.config import settings
+from app.services.docker_sandbox import DockerSandbox, get_docker_client
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +16,32 @@ class SandboxManager:
     def __init__(self, port_range: tuple[int, int] = (10001, 10101)):
         self.port_range = port_range
         self.available_ports: Set[int] = set(range(port_range[0], port_range[1]))
-        self.sessions: Dict[str, dict] = {}  # session_id -> {sandbox, port, last_active, level}
+        self.sessions: Dict[str, dict] = {}  # session_id -> {sandbox, port, last_active, level, client_ip}
+        self._sessions_by_ip: Dict[str, list[str]] = {}  # ip -> [session_ids]
         self._cleanup_task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
         self._shutting_down = False
+
+    def cleanup_orphaned_containers(self) -> None:
+        """Remove any sandbox containers left over from a previous run."""
+        try:
+            client = get_docker_client()
+            containers = client.containers.list(
+                filters={"name": "sandbox-"}, all=True
+            )
+            for container in containers:
+                try:
+                    logger.info(f"Removing orphaned container: {container.name}")
+                    container.stop(timeout=5)
+                    container.remove(force=True)
+                except Exception as e:
+                    logger.warning(f"Failed to remove orphaned container {container.name}: {e}")
+        except Exception as e:
+            logger.warning(f"Orphan cleanup skipped: {e}")
+
+    def can_create_session_for_ip(self, ip: str, max_per_ip: int) -> bool:
+        """Check if an IP can create another session."""
+        return len(self._sessions_by_ip.get(ip, [])) < max_per_ip
 
     def start_cleanup_task(self) -> None:
         """Start background cleanup task."""
@@ -55,7 +78,8 @@ class SandboxManager:
             await self.destroy_session(session_id)
 
     async def create_session(
-        self, session_id: str, level_number: int, api_key: str | None = None
+        self, session_id: str, level_number: int, api_key: str | None = None,
+        client_ip: str = "unknown",
     ) -> dict:
         """Create a new sandbox session.
 
@@ -76,6 +100,8 @@ class SandboxManager:
                 raise RuntimeError("Manager is shutting down")
             if session_id in self.sessions:
                 raise ValueError(f"Session {session_id} already exists")
+            if len(self.sessions) >= settings.max_sessions:
+                raise RuntimeError(f"Maximum sessions ({settings.max_sessions}) reached")
             if not self.available_ports:
                 raise RuntimeError("No available ports for new session")
             port = self.available_ports.pop()
@@ -97,7 +123,9 @@ class SandboxManager:
                     "port": port,
                     "last_active": datetime.now(),
                     "level_number": level_number,
+                    "client_ip": client_ip,
                 }
+                self._sessions_by_ip.setdefault(client_ip, []).append(session_id)
 
             logger.info(f"Session created: {session_id} on port {port}")
             return {
@@ -140,6 +168,13 @@ class SandboxManager:
             session = self.sessions.pop(session_id, None)
             if session:
                 self.available_ports.add(session["port"])
+                ip = session.get("client_ip")
+                if ip and ip in self._sessions_by_ip:
+                    self._sessions_by_ip[ip] = [
+                        s for s in self._sessions_by_ip[ip] if s != session_id
+                    ]
+                    if not self._sessions_by_ip[ip]:
+                        del self._sessions_by_ip[ip]
 
         if session:
             await session["sandbox"].terminate()

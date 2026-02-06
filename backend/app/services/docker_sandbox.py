@@ -94,6 +94,22 @@ class DockerSandbox:
                 "TTYD_TOKEN": self.ttyd_token,
             },
             ports={"7681/tcp": ("127.0.0.1", self.port)},
+            # Resource limits
+            mem_limit="1g",
+            cpu_quota=100000,
+            pids_limit=100,
+            # Security hardening
+            read_only=True,
+            security_opt=["no-new-privileges:true"],
+            cap_drop=["ALL"],
+            cap_add=["CHOWN", "SETUID", "SETGID"],
+            tmpfs={
+                "/tmp": "size=100m",
+                "/home/claude/.claude": "size=50m",
+                "/home/claude/workspace": "size=200m",
+            },
+            # Network isolation (requires scripts/setup-network.sh)
+            network="sandbox-net",
         )
 
         container_id = self.container.id
