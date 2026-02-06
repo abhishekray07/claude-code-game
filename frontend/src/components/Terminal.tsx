@@ -8,87 +8,17 @@ import { config } from "../config";
 
 interface TerminalProps {
   sessionId: string;
-  ttydUrl?: string; // If provided, use iframe mode (Fly.io)
-  ttydPort?: number; // For Docker mode: port where ttyd is running
-  ttydToken?: string; // For Docker mode: authentication token
+  wsToken: string;
   onReady?: () => void;
   onLevelComplete?: () => void;
 }
 
-// Iframe-based terminal for Fly.io ttyd
-function IframeTerminal({
-  ttydUrl,
-  ttydPort,
-  onReady,
-}: {
-  ttydUrl?: string;
-  ttydPort?: number;
-  ttydToken?: string; // Kept for interface compatibility but unused
-  onReady?: () => void;
-}) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  // Determine the URL to use
-  // For Docker mode: construct URL with basic auth
-  // For Fly.io mode: use the provided ttydUrl directly
-  const terminalUrl = ttydUrl
-    ? ttydUrl
-    : ttydPort
-      ? `http://localhost:${ttydPort}/`
-      : null;
-
-  useEffect(() => {
-    // Notify ready when iframe loads
-    const iframe = iframeRef.current;
-    if (iframe) {
-      iframe.onload = () => {
-        onReady?.();
-      };
-    }
-  }, [onReady]);
-
-  if (!terminalUrl) {
-    return (
-      <div style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#1a1a2e",
-        color: "#eee",
-      }}>
-        <p>Terminal configuration missing</p>
-      </div>
-    );
-  }
-
-  return (
-    <iframe
-      ref={iframeRef}
-      src={terminalUrl}
-      title="Terminal"
-      style={{
-        width: "100%",
-        height: "100%",
-        border: "none",
-        backgroundColor: "#1a1a2e",
-      }}
-      allow="clipboard-read; clipboard-write"
-    />
-  );
-}
-
-// WebSocket-based terminal for local/Modal mode
-function WebSocketTerminal({
+export function Terminal({
   sessionId,
+  wsToken,
   onReady,
   onLevelComplete,
-}: {
-  sessionId: string;
-  onReady?: () => void;
-  onLevelComplete?: () => void;
-}) {
+}: TerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -134,70 +64,28 @@ function WebSocketTerminal({
     const connect = () => {
       if (!isActive) return;
 
-      // Connect to backend WebSocket proxy
-      const wsUrl = `${config.apiUrl.replace("http", "ws")}/ws/terminal/${sessionId}`;
-      // ttyd requires the 'tty' subprotocol
-      const ws = new WebSocket(wsUrl, ["tty"]);
-      ws.binaryType = "arraybuffer"; // Receive binary data as ArrayBuffer, not Blob
+      // Plain WebSocket to local Express server — no subprotocol, no ttyd
+      const wsUrl = `${config.apiUrl.replace("http", "ws")}/ws/terminal/${sessionId}?token=${wsToken}`;
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
         if (!isActive) return;
         reconnectAttemptRef.current = 0;
-
-        // ttyd 1.7.x protocol: send auth token first (even empty when no auth)
-        ws.send(JSON.stringify({ AuthToken: "" }));
-
-        // Then send resize so ttyd starts sending output
-        const dims = fitAddon.proposeDimensions();
-        if (dims) {
-          ws.send("1" + JSON.stringify({ columns: dims.cols, rows: dims.rows }));
-        }
-
         onReadyRef.current?.();
       };
 
       ws.onmessage = (event) => {
         if (!isActive) return;
-        const rawData = event.data;
+        const data = event.data;
 
-        // Handle binary data (ArrayBuffer from ttyd)
-        if (rawData instanceof ArrayBuffer) {
-          if (rawData.byteLength === 0) return;
-
-          // ttyd 1.7.x protocol: first byte is message type
-          // '0' (48): Terminal output, '1' (49): Window title, '2' (50): Preferences
-          const view = new Uint8Array(rawData);
-          const msgType = view[0];
-          const content = new TextDecoder().decode(view.slice(1));
-
-          if (msgType === 48) {
-            // Type '0': Terminal output
-            if (content.includes("__LEVEL_COMPLETE__")) {
-              const cleanData = content.replace("__LEVEL_COMPLETE__", "");
-              if (cleanData.trim()) {
-                term.write(cleanData);
-              }
-              onLevelCompleteRef.current?.();
-              return;
-            }
-            term.write(content);
-          }
-          // Types '1' (title) and '2' (preferences) are silently ignored
-          return;
-        }
-
-        // Handle text data (fallback)
-        if (typeof rawData === "string" && rawData.length > 0) {
-          if (rawData.includes("__LEVEL_COMPLETE__")) {
-            const cleanData = rawData.replace("__LEVEL_COMPLETE__", "");
-            if (cleanData.trim()) {
-              term.write(cleanData);
-            }
+        if (typeof data === "string") {
+          if (data.includes("__LEVEL_COMPLETE__")) {
+            term.write(data.replace("__LEVEL_COMPLETE__", ""));
             onLevelCompleteRef.current?.();
             return;
           }
-          term.write(rawData);
+          term.write(data);
         }
       };
 
@@ -232,10 +120,10 @@ function WebSocketTerminal({
         }
       };
 
-      // Send input to backend (ttyd protocol: prefix with '0' for input)
+      // Input — plain text, no type prefix
       term.onData((data) => {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send("0" + data);
+          ws.send(data);
         }
       });
     };
@@ -243,16 +131,14 @@ function WebSocketTerminal({
     // Initial connection with small delay
     const connectTimeout = setTimeout(connect, 100);
 
-    // Handle resize - fit terminal and notify ttyd
+    // Handle resize — send as JSON
     const handleResize = () => {
       fitAddon.fit();
-      // Send resize to ttyd (type '1': resize)
       const ws = wsRef.current;
       if (ws && ws.readyState === WebSocket.OPEN) {
         const dims = fitAddon.proposeDimensions();
         if (dims) {
-          const resizeMsg = "1" + JSON.stringify({ columns: dims.cols, rows: dims.rows });
-          ws.send(resizeMsg);
+          ws.send(JSON.stringify({ cols: dims.cols, rows: dims.rows }));
         }
       }
     };
@@ -270,7 +156,7 @@ function WebSocketTerminal({
       }
       term.dispose();
     };
-  }, [sessionId]);
+  }, [sessionId, wsToken]);
 
   return (
     <div
@@ -281,37 +167,6 @@ function WebSocketTerminal({
         padding: "10px",
         backgroundColor: "#1a1a2e",
       }}
-    />
-  );
-}
-
-export function Terminal({
-  sessionId,
-  ttydUrl,
-  ttydPort,
-  ttydToken,
-  onReady,
-  onLevelComplete,
-}: TerminalProps) {
-  // Use iframe ONLY for Fly.io (ttydUrl provided)
-  // Docker mode now uses WebSocket proxy like Modal/local
-  if (ttydUrl) {
-    return (
-      <IframeTerminal
-        ttydUrl={ttydUrl}
-        ttydPort={ttydPort}
-        ttydToken={ttydToken}
-        onReady={onReady}
-      />
-    );
-  }
-
-  // WebSocket mode for Docker/Modal/local
-  return (
-    <WebSocketTerminal
-      sessionId={sessionId}
-      onReady={onReady}
-      onLevelComplete={onLevelComplete}
     />
   );
 }
