@@ -91,6 +91,8 @@ async function handleVerifyRequest(
 ): Promise<Response> {
   const { email } = (await request.json()) as { email: string };
   if (!email) return jsonResponse({ error: "Email required" }, 400);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) return jsonResponse({ error: "Invalid email format" }, 400);
 
   // Check enrollment
   const row = await env.DB.prepare(
@@ -108,8 +110,11 @@ async function handleVerifyRequest(
     return jsonResponse({ error: "Too many requests" }, 429);
   }
 
-  // Generate 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate 6-digit code (cryptographically secure)
+  const randomBytes = new Uint8Array(4);
+  crypto.getRandomValues(randomBytes);
+  const randomNum = new DataView(randomBytes.buffer).getUint32(0);
+  const code = (100000 + (randomNum % 900000)).toString();
 
   // Store code in KV with 5-minute TTL
   await env.KV.put(`code:${email}`, code, { expirationTtl: 300 });
@@ -120,7 +125,7 @@ async function handleVerifyRequest(
   });
 
   // Send email via Resend
-  await fetch("https://api.resend.com/emails", {
+  const resendRes = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${env.RESEND_API_KEY}`,
@@ -133,6 +138,9 @@ async function handleVerifyRequest(
       text: `Your verification code is: ${code}\n\nThis code expires in 5 minutes.`,
     }),
   });
+  if (!resendRes.ok) {
+    return jsonResponse({ error: "Failed to send email" }, 500);
+  }
 
   return jsonResponse({ ok: true });
 }

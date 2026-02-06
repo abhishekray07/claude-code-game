@@ -4,6 +4,7 @@ compatibility_date = "2025-01-01"
 
 [vars]
 ADMIN_TOKEN = "change-me"
+JWT_KEY_ID = "v1"
 
 [[kv_namespaces]]
 binding = "KV"

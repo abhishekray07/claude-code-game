@@ -10,8 +10,11 @@ const DATA_DIR = path.join(os.homedir(), ".claude-code-game");
 const AUTH_FILE = path.join(DATA_DIR, "auth.json");
 const KEYS_DIR = path.resolve(__dirname, "../../keys");
 
-// Worker URL — configurable via env
-const WORKER_URL = process.env.WORKER_URL || "https://claude-code-game-api.YOUR_SUBDOMAIN.workers.dev";
+// Worker URL — must be set via WORKER_URL env var for auth to work
+const WORKER_URL = process.env.WORKER_URL || "";
+if (!WORKER_URL) {
+  console.warn("WORKER_URL not set — auth and leaderboard features disabled. Set WORKER_URL to enable.");
+}
 
 export const authRouter = Router();
 
