@@ -1,7 +1,9 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "http";
 import { levelsRouter } from "./routes/levels.js";
+import { sessionsRouter, setupWebSocket } from "./routes/sessions.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -9,15 +11,24 @@ export function createApp() {
   const app = express();
   app.use(express.json());
 
-  // API routes
-  app.use(levelsRouter);
+  app.use((_req, res, next) => {
+    const origin = _req.headers.origin || "";
+    if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    }
+    if (_req.method === "OPTIONS") { res.sendStatus(204); return; }
+    next();
+  });
 
-  // Health check
+  app.use(levelsRouter);
+  app.use(sessionsRouter);
+
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", mode: "local" });
   });
 
-  // Serve frontend static files (production)
   const frontendDir = path.resolve(__dirname, "../frontend/dist");
   app.use(express.static(frontendDir));
   app.get("*", (_req, res) => {
@@ -25,4 +36,17 @@ export function createApp() {
   });
 
   return app;
+}
+
+export function startServer(port: number, host = "127.0.0.1") {
+  const app = createApp();
+  const server = createServer(app);
+  setupWebSocket(server);
+
+  return new Promise<void>((resolve) => {
+    server.listen(port, host, () => {
+      console.log(`Server running at http://${host}:${port}`);
+      resolve();
+    });
+  });
 }
