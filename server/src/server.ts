@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
+import { authRouter } from "./routes/auth.js";
 import { levelsRouter } from "./routes/levels.js";
 import { sessionsRouter, setupWebSocket } from "./routes/sessions.js";
 
@@ -22,6 +23,7 @@ export function createApp() {
     next();
   });
 
+  app.use(authRouter);
   app.use(levelsRouter);
   app.use(sessionsRouter);
 
