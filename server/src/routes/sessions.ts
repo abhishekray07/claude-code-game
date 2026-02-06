@@ -102,7 +102,14 @@ sessionsRouter.post("/api/sessions", (req: Request, res: Response) => {
     copyExerciseFiles(exerciseDir, workspaceDir);
   }
 
-  const ptyProcess = spawnTerminal(workspaceDir);
+  let ptyProcess;
+  try {
+    ptyProcess = spawnTerminal(workspaceDir);
+  } catch (err: any) {
+    fs.rmSync(workspaceDir, { recursive: true, force: true });
+    res.status(500).json({ detail: `Failed to spawn terminal: ${err.message}` });
+    return;
+  }
 
   sessions.set(sessionId, {
     sessionId,
