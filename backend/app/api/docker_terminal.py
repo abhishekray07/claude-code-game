@@ -3,7 +3,7 @@ import asyncio
 import logging
 import uuid
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
 try:
@@ -13,12 +13,23 @@ except ImportError:
     websockets = None
     Subprotocol = None  # type: ignore[misc, assignment]
 
+from app.config import settings
 from app.services.sandbox_manager import sandbox_manager
 from app.services.levels import load_level_by_number
 from app.services.verification import VerificationEngine
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+MAX_SESSIONS_PER_IP = 3
+
+
+def get_client_ip(request: Request) -> str:
+    """Get client IP from request, handling proxies."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 class UpdateLevelRequest(BaseModel):
@@ -31,6 +42,7 @@ class CreateSessionRequest(BaseModel):
     """Request to create a new session."""
 
     level_number: int = 1
+    access_code: str = ""
 
 
 class CreateSessionResponse(BaseModel):
@@ -44,8 +56,20 @@ class CreateSessionResponse(BaseModel):
 
 
 @router.post("/api/docker/sessions", response_model=CreateSessionResponse)
-async def create_session(request: CreateSessionRequest):
+async def create_session(request: CreateSessionRequest, http_request: Request):
     """Create a new Docker sandbox session."""
+    # Check access code if configured
+    if settings.demo_access_code:
+        if request.access_code != settings.demo_access_code:
+            raise HTTPException(status_code=403, detail="Invalid access code")
+
+    # Rate limiting by IP
+    client_ip = get_client_ip(http_request)
+    if not sandbox_manager.can_create_session_for_ip(client_ip, MAX_SESSIONS_PER_IP):
+        raise HTTPException(
+            status_code=429, detail="Too many active sessions."
+        )
+
     session_id = str(uuid.uuid4())[:8]
 
     # Load level
@@ -59,6 +83,7 @@ async def create_session(request: CreateSessionRequest):
         result = await sandbox_manager.create_session(
             session_id=session_id,
             level_number=request.level_number,
+            client_ip=client_ip,
         )
     except RuntimeError as e:
         logger.error(f"Sandbox runtime error: {e}", exc_info=True)
@@ -275,6 +300,7 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
                     while not shutdown_event.is_set():
                         await asyncio.sleep(30)
                         if not shutdown_event.is_set():
+                            sandbox_manager.update_activity(session_id)
                             try:
                                 await websocket.send_bytes(b"")
                             except Exception as e:

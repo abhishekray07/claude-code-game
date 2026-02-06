@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     ttyd_port: int = 7681
 
     # Security
+    max_sessions: int = 5  # Global session cap
     demo_access_code: str = ""  # Set via DEMO_ACCESS_CODE env var
     allowed_origins: list[str] = [
         "http://localhost:5173",

@@ -125,6 +125,7 @@ function App() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             level_number: levelNumber,
+            access_code: accessCode,
           }),
         });
 
@@ -134,12 +135,9 @@ function App() {
         }
 
         const dockerData = await response.json();
-        // Transform Docker API response to match Session interface
         data = {
           session_id: dockerData.session_id,
           level: dockerData.level,
-          port: dockerData.port,
-          ttyd_token: dockerData.ttyd_token,
         };
       } else {
         // Default mode: use standard sessions API
@@ -203,8 +201,6 @@ function App() {
           setSession({
             ...session,
             level: data.level,
-            port: data.port,
-            ttyd_token: data.ttyd_token,
           });
         } catch (e) {
           setError(e instanceof Error ? e.message : "Unknown error");
@@ -258,15 +254,13 @@ function App() {
           </p>
 
           <div className="input-group">
-            {!isDockerMode && (
-              <input
-                type="text"
-                placeholder="Access code (if required)"
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && startGame(selectedLesson)}
-              />
-            )}
+            <input
+              type="text"
+              placeholder="Access code (if required)"
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && startGame(selectedLesson)}
+            />
             <div className="lesson-select-row">
               <select
                 value={selectedLesson}
