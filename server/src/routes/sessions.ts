@@ -9,6 +9,7 @@ import { IncomingMessage } from "http";
 import { Server } from "http";
 import { spawnTerminal } from "../terminal.js";
 import { loadLevelByNumber, Level } from "./levels.js";
+import { VerificationEngine } from "../verification.js";
 import type { IPty } from "node-pty-prebuilt-multiarch";
 
 const DATA_DIR = path.join(os.homedir(), ".claude-code-game");
@@ -190,25 +191,42 @@ sessionsRouter.patch("/api/sessions/:sessionId/level", (req: Request, res: Respo
   });
 });
 
-// GET /api/sessions/:sessionId/progress (placeholder — Task 3 adds real verification)
-sessionsRouter.get("/api/sessions/:sessionId/progress", (req: Request, res: Response) => {
-  const session = sessions.get(req.params.sessionId as string);
+// GET /api/sessions/:sessionId/progress
+sessionsRouter.get("/api/sessions/:sessionId/progress", async (req: Request, res: Response) => {
+  const sessionId = req.params.sessionId as string;
+  const session = sessions.get(sessionId);
   if (!session) {
     res.status(404).json({ detail: "Session not found" });
     return;
   }
   session.lastActivity = Date.now();
-  res.json({ session_id: session.sessionId, progress: null });
+  const engine = new VerificationEngine(session.workspaceDir);
+  const progress = await engine.getProgress(session.level);
+
+  if (progress.completed) session.completed = true;
+
+  res.json({
+    session_id: session.sessionId,
+    level_number: session.levelNumber,
+    completed: session.completed,
+    progress,
+  });
 });
 
 // GET /api/sessions/:sessionId/status
-sessionsRouter.get("/api/sessions/:sessionId/status", (req: Request, res: Response) => {
-  const session = sessions.get(req.params.sessionId as string);
+sessionsRouter.get("/api/sessions/:sessionId/status", async (req: Request, res: Response) => {
+  const sessionId = req.params.sessionId as string;
+  const session = sessions.get(sessionId);
   if (!session) {
     res.status(404).json({ detail: "Session not found" });
     return;
   }
   session.lastActivity = Date.now();
+  if (!session.completed) {
+    const engine = new VerificationEngine(session.workspaceDir);
+    const progress = await engine.getProgress(session.level);
+    if (progress.completed) session.completed = true;
+  }
   res.json({ completed: session.completed });
 });
 
