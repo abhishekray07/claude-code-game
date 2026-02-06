@@ -34,3 +34,9 @@ htmlcov/
 *.egg
 *.whl
 .env.local
+
+# Private keys
+worker/private.pem
+worker/private-pkcs8.pem
+*.pem
+!server/keys/*.pem

@@ -1,0 +1,15 @@
+name = "claude-code-game-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+ADMIN_TOKEN = "change-me"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "placeholder"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "claude-code-game"
+database_id = "placeholder"
