@@ -320,6 +320,9 @@ export function setupWebSocket(server: Server) {
       }
     });
 
+    // Trigger a fresh prompt — the original was emitted before WS connected
+    session.pty.write("\n");
+
     ws.on("message", (data: Buffer | string) => {
       const text = typeof data === "string" ? data : data.toString("utf-8");
       session.lastActivity = Date.now();
