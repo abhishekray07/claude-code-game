@@ -72,7 +72,8 @@ function reportCompletion(levelNumber: number) {
     if (!fs.existsSync(authPath)) return;
     const auth = JSON.parse(fs.readFileSync(authPath, "utf-8"));
     if (!auth.token) return;
-    const workerUrl = process.env.WORKER_URL || "https://claude-code-game-api.YOUR_SUBDOMAIN.workers.dev";
+    const workerUrl = process.env.WORKER_URL;
+    if (!workerUrl) return;
     fetch(`${workerUrl}/events`, {
       method: "POST",
       headers: {
