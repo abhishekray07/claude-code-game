@@ -10,7 +10,7 @@ export interface TerminalSession {
 
 export function spawnTerminal(workspaceDir: string): pty.IPty {
   const isWindows = process.platform === "win32";
-  const shell = isWindows ? "powershell.exe" : (process.env.SHELL || "bash");
+  const shell = isWindows ? "powershell.exe" : "bash";
   const args = isWindows ? [] : ["--norc", "--noprofile", "-i"];
 
   const env: Record<string, string> = {
