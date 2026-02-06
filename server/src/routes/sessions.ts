@@ -65,6 +65,25 @@ function copyExerciseFiles(exerciseDir: string, workspaceDir: string) {
   }
 }
 
+// Report completion to cloud (fire and forget)
+function reportCompletion(levelNumber: number) {
+  try {
+    const authPath = path.join(os.homedir(), ".claude-code-game", "auth.json");
+    if (!fs.existsSync(authPath)) return;
+    const auth = JSON.parse(fs.readFileSync(authPath, "utf-8"));
+    if (!auth.token) return;
+    const workerUrl = process.env.WORKER_URL || "https://claude-code-game-api.YOUR_SUBDOMAIN.workers.dev";
+    fetch(`${workerUrl}/events`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${auth.token}`,
+      },
+      body: JSON.stringify({ level_number: levelNumber }),
+    }).catch(() => {}); // fire and forget
+  } catch {}
+}
+
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 setInterval(() => {
   const now = Date.now();
@@ -203,7 +222,10 @@ sessionsRouter.get("/api/sessions/:sessionId/progress", async (req: Request, res
   const engine = new VerificationEngine(session.workspaceDir);
   const progress = await engine.getProgress(session.level);
 
-  if (progress.completed) session.completed = true;
+  if (progress.completed) {
+    session.completed = true;
+    reportCompletion(session.levelNumber);
+  }
 
   res.json({
     session_id: session.sessionId,
@@ -225,7 +247,10 @@ sessionsRouter.get("/api/sessions/:sessionId/status", async (req: Request, res: 
   if (!session.completed) {
     const engine = new VerificationEngine(session.workspaceDir);
     const progress = await engine.getProgress(session.level);
-    if (progress.completed) session.completed = true;
+    if (progress.completed) {
+      session.completed = true;
+      reportCompletion(session.levelNumber);
+    }
   }
   res.json({ completed: session.completed });
 });

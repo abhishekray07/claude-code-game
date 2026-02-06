@@ -110,3 +110,14 @@ authRouter.post("/api/auth/logout", (_req: Request, res: Response) => {
   } catch {}
   res.json({ ok: true });
 });
+
+// GET /api/leaderboard — proxy to Worker
+authRouter.get("/api/leaderboard", async (_req: Request, res: Response) => {
+  try {
+    const workerRes = await fetch(`${WORKER_URL}/leaderboard`);
+    const data = await workerRes.json();
+    res.status(workerRes.status).json(data);
+  } catch {
+    res.json([]); // Return empty if Worker is unreachable
+  }
+});
