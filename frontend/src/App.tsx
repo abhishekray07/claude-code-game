@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Terminal } from "./components/Terminal";
 import { VideoPlayer } from "./components/VideoPlayer";
+import { Leaderboard } from "./components/Leaderboard";
 import { useAuth } from "./hooks/useAuth";
 import { useProgress } from "./hooks/useProgress";
 import {
@@ -369,6 +370,8 @@ function App() {
               </a>
             </p>
           )}
+
+          {auth.token && <Leaderboard />}
         </div>
       </div>
     );
