@@ -81,7 +81,7 @@ authRouter.post("/api/auth/request", async (req: Request, res: Response) => {
     const data = await workerRes.json() as Record<string, any>;
     res.status(workerRes.status).json(data);
   } catch (err: any) {
-    res.status(503).json({ error: "Auth service unavailable. Try guest mode." });
+    res.status(503).json({ error: "Auth service unavailable. Please try again later." });
   }
 });
 
@@ -99,7 +99,7 @@ authRouter.post("/api/auth/confirm", async (req: Request, res: Response) => {
     }
     res.status(workerRes.status).json(data);
   } catch (err: any) {
-    res.status(503).json({ error: "Auth service unavailable. Try guest mode." });
+    res.status(503).json({ error: "Auth service unavailable. Please try again later." });
   }
 });
 

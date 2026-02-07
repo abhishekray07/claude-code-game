@@ -92,16 +92,6 @@
   border-color: #6366f1;
 }
 
-.guest-banner {
-  color: #facc15;
-  font-size: 0.875rem;
-  background: rgba(250, 204, 21, 0.1);
-  border: 1px solid rgba(250, 204, 21, 0.3);
-  border-radius: 8px;
-  padding: 8px 16px;
-  margin-bottom: 1rem;
-}
-
 .error {
   color: #f87171;
   margin-top: 1rem;

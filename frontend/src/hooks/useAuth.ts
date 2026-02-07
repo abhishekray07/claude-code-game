@@ -5,11 +5,10 @@ interface AuthState {
   token: string | null;
   email: string | null;
   name: string | null;
-  guest: boolean;
 }
 
 export function useAuth() {
-  const [auth, setAuth] = useState<AuthState>({ token: null, email: null, name: null, guest: false });
+  const [auth, setAuth] = useState<AuthState>({ token: null, email: null, name: null });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +16,7 @@ export function useAuth() {
       .then((r) => r.json())
       .then((data) => {
         if (data.authenticated) {
-          setAuth({ token: data.token, email: data.email, name: data.name, guest: false });
+          setAuth({ token: data.token, email: data.email, name: data.name });
         }
       })
       .catch(() => {})
@@ -47,17 +46,13 @@ export function useAuth() {
       throw new Error(data.error || "Invalid code");
     }
     const data = await res.json();
-    setAuth({ token: data.token, email: data.email, name: data.name, guest: false });
-  }
-
-  function continueAsGuest() {
-    setAuth({ token: null, email: null, name: null, guest: true });
+    setAuth({ token: data.token, email: data.email, name: data.name });
   }
 
   function logout() {
     fetch(`${config.apiUrl}/api/auth/logout`, { method: "POST" }).catch(() => {});
-    setAuth({ token: null, email: null, name: null, guest: false });
+    setAuth({ token: null, email: null, name: null });
   }
 
-  return { auth, loading, requestCode, confirmCode, continueAsGuest, logout };
+  return { auth, loading, requestCode, confirmCode, logout };
 }

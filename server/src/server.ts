@@ -40,15 +40,23 @@ export function createApp() {
   return app;
 }
 
-export function startServer(port: number, host = "127.0.0.1") {
+export function startServer(port: number, host = "127.0.0.1"): Promise<number> {
   const app = createApp();
   const server = createServer(app);
   setupWebSocket(server);
 
-  return new Promise<void>((resolve) => {
+  return new Promise<number>((resolve, reject) => {
+    server.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        reject(err);
+      } else {
+        reject(err);
+      }
+    });
     server.listen(port, host, () => {
-      console.log(`Server running at http://${host}:${port}`);
-      resolve();
+      const addr = server.address();
+      const actualPort = typeof addr === "object" && addr ? addr.port : port;
+      resolve(actualPort);
     });
   });
 }
