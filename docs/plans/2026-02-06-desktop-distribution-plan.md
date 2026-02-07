@@ -50,7 +50,7 @@ The following issues were identified during technical review and are addressed i
 
 14. **Session cleanup strategy** — TTL for workspace directories and orphaned PTY processes. **[REMEDIATION: Added to Task 2]**
 15. **Rate limiting on auth endpoints** — Prevent brute-force code guessing. **[REMEDIATION: Added to Task 7]**
-16. **Offline mode** — Define behavior when Worker is unreachable. **[REMEDIATION: Added to Task 8]**
+16. **Offline mode** — Define behavior when Worker is unreachable. **[REMEDIATION: Added to Task 8 — show error, block progression, require retry]**
 17. **Key rotation strategy** — Mechanism to roll JWT keys without breaking old clients. **[REMEDIATION: Added to Task 7]**
 18. **Cross-platform testing should start earlier** — node-pty and path handling are high-risk. **[REMEDIATION: Task ordering note added]**
 
@@ -1492,7 +1492,7 @@ git commit -m "feat: add Cloudflare Worker for auth, progress, and leaderboard"
 
 > **[REMEDIATION #9]** Auth token file written with mode 0600 on Unix.
 >
-> **[REMEDIATION #16]** Offline mode: If Worker is unreachable during auth, allow "guest mode" with local-only progress (no cloud sync, no leaderboard). Show a warning banner.
+> **[REMEDIATION #16]** Offline mode: If Worker is unreachable during auth, show an error message and block progression until auth succeeds. No guest bypass.
 
 **Step 1: Create useAuth hook**
 
@@ -1506,11 +1506,10 @@ interface AuthState {
   token: string | null;
   email: string | null;
   name: string | null;
-  guest: boolean; // [REMEDIATION #16] guest mode when offline
 }
 
 export function useAuth() {
-  const [auth, setAuth] = useState<AuthState>({ token: null, email: null, name: null, guest: false });
+  const [auth, setAuth] = useState<AuthState>({ token: null, email: null, name: null });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -1519,7 +1518,7 @@ export function useAuth() {
       .then((r) => r.json())
       .then((data) => {
         if (data.authenticated) {
-          setAuth({ token: data.token, email: data.email, name: data.name, guest: false });
+          setAuth({ token: data.token, email: data.email, name: data.name });
         }
       })
       .finally(() => setLoading(false));
@@ -1542,20 +1541,15 @@ export function useAuth() {
     });
     if (!res.ok) throw new Error((await res.json()).error);
     const data = await res.json();
-    setAuth({ token: data.token, email: data.email, name: data.name, guest: false });
-  }
-
-  // [REMEDIATION #16] Guest mode — skip auth, local-only
-  function continueAsGuest() {
-    setAuth({ token: null, email: null, name: null, guest: true });
+    setAuth({ token: data.token, email: data.email, name: data.name });
   }
 
   function logout() {
     fetch(`${config.apiUrl}/api/auth/logout`, { method: "POST" });
-    setAuth({ token: null, email: null, name: null, guest: false });
+    setAuth({ token: null, email: null, name: null });
   }
 
-  return { auth, loading, requestCode, confirmCode, continueAsGuest, logout };
+  return { auth, loading, requestCode, confirmCode, logout };
 }
 ```
 
@@ -1585,11 +1579,11 @@ Create `server/src/routes/auth.ts` with:
 
 **Step 3: Add auth screen to App.tsx**
 
-Before the lesson list, check `auth.token || auth.guest`. If neither, show:
+Before the lesson list, check `auth.token`. If falsy, show:
 1. Email input → "Send Code" button
 2. Code input → "Verify" button
-3. "Continue as Guest" link (smaller, below main flow)
-4. On success, proceed to lesson list
+3. On success, proceed to lesson list
+4. If Worker unreachable, show error and require retry (no bypass)
 
 **Step 4: Verify frontend compiles**
 
@@ -1599,7 +1593,7 @@ Run: `cd frontend && npx tsc --noEmit`
 
 ```bash
 git add frontend/src/hooks/useAuth.ts frontend/src/App.tsx server/src/routes/auth.ts
-git commit -m "feat: add email verification auth flow with guest mode fallback"
+git commit -m "feat: add email verification auth flow"
 ```
 
 ---
@@ -1750,7 +1744,7 @@ git commit -m "chore: remove Python backend and Docker sandbox (replaced by Node
 **Level 2 (API tests via curl) — 11/11 PASS:**
 - `GET /health` → `{"status":"ok","mode":"local"}`
 - `GET /api/auth/status` → `{"authenticated":false}`
-- `POST /api/auth/request` (no Worker) → graceful error: "Auth service unavailable. Try guest mode."
+- `POST /api/auth/request` (no Worker) → graceful error: "Auth service unavailable. Please try again later."
 - `POST /api/auth/confirm` (no Worker) → graceful error
 - `GET /api/leaderboard` (no Worker) → `[]` (graceful empty)
 - `POST /api/auth/logout` → `{"ok":true}`
@@ -1760,14 +1754,12 @@ git commit -m "chore: remove Python backend and Docker sandbox (replaced by Node
 - `GET /api/sessions/:id/status` → `{"completed":false}`
 - `GET /api/sessions/nonexistent/status` → 404
 
-**Level 3 (Browser E2E via Playwright) — 7/7 PASS (after fixes):**
-- Auth screen loads with email input, Send Code button, Continue as Guest link
-- Send Code shows "Auth service unavailable" error (no Worker)
-- Continue as Guest transitions to lesson list with guest banner
+**Level 3 (Browser E2E via Playwright) — 5/5 PASS (after fixes):**
+- Auth screen loads with email input, Send Code button
+- Send Code shows "Auth service unavailable" error (no Worker), blocks progression
 - Start lesson shows watch phase with YouTube player
 - Start Exercise shows terminal with lesson intro + bash prompt
 - `echo hello` → `hello` — terminal is fully interactive
-- End Session returns to start screen with guest state preserved
 
 **Bugs found and fixed (commit 295818a):**
 1. **Stale frontend build** — `server/frontend/` was built before auth code was committed. Auth screen was missing. Fix: rebuilt and re-copied.
