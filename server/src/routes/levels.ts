@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import YAML from "yaml";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LEVELS_DIR = path.resolve(__dirname, "../../../levels");
+const LEVELS_DIR = path.resolve(__dirname, "../../levels");
 
 export const levelsRouter = Router();
 

@@ -1,1 +1,0 @@
-"""Claude Code Game backend."""

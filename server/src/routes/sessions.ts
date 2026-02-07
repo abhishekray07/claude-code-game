@@ -14,7 +14,7 @@ import type { IPty } from "node-pty-prebuilt-multiarch";
 
 const DATA_DIR = path.join(os.homedir(), ".claude-code-game");
 const WORKSPACES_DIR = path.join(DATA_DIR, "workspaces");
-const LEVELS_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../../levels");
+const LEVELS_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../levels");
 
 interface Session {
   sessionId: string;

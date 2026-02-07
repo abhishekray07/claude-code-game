@@ -5,10 +5,12 @@
   "bin": {
     "claude-code-game": "./dist/cli.js"
   },
+  "files": ["dist/", "frontend/", "levels/", "keys/"],
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
+    "prepublishOnly": "npm run build && cd ../frontend && npm install && npm run build && cd ../server && rm -rf frontend && cp -r ../frontend/dist frontend",
     "build": "tsc",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
