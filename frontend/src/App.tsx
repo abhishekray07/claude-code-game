@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Terminal } from "./components/Terminal";
 import { VideoPlayer } from "./components/VideoPlayer";
+import { Leaderboard } from "./components/Leaderboard";
+import { useAuth } from "./hooks/useAuth";
 import { useProgress } from "./hooks/useProgress";
 import {
   useVerificationProgress,
@@ -35,18 +37,15 @@ interface Level {
 
 interface Session {
   session_id: string;
+  ws_token: string;
   level: Level;
-  ttyd_url?: string; // Present for Fly.io mode
-  // Docker mode fields
-  port?: number;
-  ttyd_token?: string;
 }
 
 type LessonPhase = "watch" | "exercise";
 
 function App() {
+  const { auth, loading: authLoading, requestCode, confirmCode, continueAsGuest, logout } = useAuth();
   const [session, setSession] = useState<Session | null>(null);
-  const [accessCode, setAccessCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
@@ -54,8 +53,12 @@ function App() {
   const [selectedLesson, setSelectedLesson] = useState(1);
   const { progress, markComplete } = useProgress();
 
-  // Check terminal mode
-  const isDockerMode = config.terminalMode === "docker";
+  // Auth screen state
+  const [authEmail, setAuthEmail] = useState("");
+  const [authCode, setAuthCode] = useState("");
+  const [authStep, setAuthStep] = useState<"email" | "code">("email");
+  const [authError, setAuthError] = useState("");
+  const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // Verification progress for current exercise
   const { progress: verificationProgress } = useVerificationProgress(
@@ -78,11 +81,9 @@ function App() {
 
       const poll = async () => {
         try {
-          const statusUrl = isDockerMode
-            ? `${config.apiUrl}/api/docker/sessions/${sessionId}/status`
-            : `${config.apiUrl}/api/sessions/${sessionId}/status`;
-
-          const response = await fetch(statusUrl);
+          const response = await fetch(
+            `${config.apiUrl}/api/sessions/${sessionId}/status`
+          );
           if (response.ok) {
             const data = await response.json();
             if (data.completed) {
@@ -116,48 +117,20 @@ function App() {
     stopPolling();
 
     try {
-      let data: Session;
+      const response = await fetch(`${config.apiUrl}/api/sessions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          level_number: levelNumber,
+        }),
+      });
 
-      if (isDockerMode) {
-        // Docker mode: use Docker-specific API
-        const response = await fetch(`${config.apiUrl}/api/docker/sessions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            level_number: levelNumber,
-            access_code: accessCode,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || "Failed to start Docker session");
-        }
-
-        const dockerData = await response.json();
-        data = {
-          session_id: dockerData.session_id,
-          level: dockerData.level,
-        };
-      } else {
-        // Default mode: use standard sessions API
-        const response = await fetch(`${config.apiUrl}/api/sessions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            level_number: levelNumber,
-            access_code: accessCode,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || "Failed to start session");
-        }
-
-        data = await response.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to start session");
       }
 
+      const data: Session = await response.json();
       setSession(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
@@ -174,54 +147,44 @@ function App() {
   };
 
   const nextLevel = async () => {
-    if (session && isDockerMode) {
-      const nextLevelNum = session.level.number + 1;
-      if (nextLevelNum <= TOTAL_LESSONS) {
-        setLoading(true);
-        setLevelComplete(false);
-        setPhase("watch");
-        stopPolling();
+    if (!session) return;
 
-        try {
-          const response = await fetch(
-            `${config.apiUrl}/api/docker/sessions/${session.session_id}/level`,
-            {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ level_number: nextLevelNum }),
-            }
-          );
+    const nextLevelNum = session.level.number + 1;
+    if (nextLevelNum > TOTAL_LESSONS) {
+      setSession(null);
+      setLevelComplete(false);
+      return;
+    }
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || "Failed to update level");
-          }
+    setLoading(true);
+    setLevelComplete(false);
+    setPhase("watch");
+    stopPolling();
 
-          const data = await response.json();
-          setSession({
-            ...session,
-            level: data.level,
-          });
-        } catch (e) {
-          setError(e instanceof Error ? e.message : "Unknown error");
-        } finally {
-          setLoading(false);
+    try {
+      const response = await fetch(
+        `${config.apiUrl}/api/sessions/${session.session_id}/level`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ level_number: nextLevelNum }),
         }
-      } else {
-        setSession(null);
-        setLevelComplete(false);
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to update level");
       }
-    } else {
-      // Non-Docker mode: original behavior
-      if (session) {
-        const nextLevelNum = session.level.number + 1;
-        if (nextLevelNum <= TOTAL_LESSONS) {
-          startGame(nextLevelNum);
-        } else {
-          setSession(null);
-          setLevelComplete(false);
-        }
-      }
+
+      const data = await response.json();
+      setSession({
+        ...session,
+        level: data.level,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -229,12 +192,10 @@ function App() {
     if (session) {
       stopPolling();
       try {
-        const endpoint = isDockerMode
-          ? `${config.apiUrl}/api/docker/sessions/${session.session_id}`
-          : `${config.apiUrl}/api/sessions/${session.session_id}`;
-        await fetch(endpoint, {
-          method: "DELETE",
-        });
+        await fetch(
+          `${config.apiUrl}/api/sessions/${session.session_id}`,
+          { method: "DELETE" }
+        );
       } catch (e) {
         console.error("Error ending session:", e);
       }
@@ -242,6 +203,107 @@ function App() {
       setLevelComplete(false);
     }
   };
+
+  // Auth loading screen
+  if (authLoading) {
+    return (
+      <div className="start-screen">
+        <div className="start-content">
+          <h1>Claude Code Game</h1>
+          <p className="subtitle">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auth screen — shown when not authenticated and not guest
+  if (!auth.token && !auth.guest) {
+    const handleRequestCode = async () => {
+      setAuthError("");
+      setAuthSubmitting(true);
+      try {
+        await requestCode(authEmail);
+        setAuthStep("code");
+      } catch (e) {
+        setAuthError(e instanceof Error ? e.message : "Failed to send code");
+      } finally {
+        setAuthSubmitting(false);
+      }
+    };
+
+    const handleConfirmCode = async () => {
+      setAuthError("");
+      setAuthSubmitting(true);
+      try {
+        await confirmCode(authEmail, authCode);
+      } catch (e) {
+        setAuthError(e instanceof Error ? e.message : "Invalid code");
+      } finally {
+        setAuthSubmitting(false);
+      }
+    };
+
+    return (
+      <div className="start-screen">
+        <div className="start-content">
+          <h1>Claude Code Game</h1>
+          <p className="subtitle">
+            Sign in to track your progress on the leaderboard
+          </p>
+
+          <div className="input-group">
+            {authStep === "email" ? (
+              <>
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !authSubmitting && handleRequestCode()}
+                />
+                <button onClick={handleRequestCode} disabled={authSubmitting || !authEmail}>
+                  {authSubmitting ? "Sending..." : "Send Code"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p style={{ color: "#888", fontSize: "0.875rem", margin: 0 }}>
+                  Code sent to {authEmail}
+                </p>
+                <input
+                  type="text"
+                  placeholder="Enter verification code"
+                  value={authCode}
+                  onChange={(e) => setAuthCode(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !authSubmitting && handleConfirmCode()}
+                />
+                <button onClick={handleConfirmCode} disabled={authSubmitting || !authCode}>
+                  {authSubmitting ? "Verifying..." : "Verify"}
+                </button>
+                <button
+                  onClick={() => { setAuthStep("email"); setAuthCode(""); setAuthError(""); }}
+                  style={{ background: "transparent", border: "1px solid #444", color: "#888" }}
+                >
+                  Back
+                </button>
+              </>
+            )}
+          </div>
+
+          {authError && <p className="error">{authError}</p>}
+
+          <p className="hint">
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); continueAsGuest(); }}
+            >
+              Continue as Guest
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Start screen
   if (!session) {
@@ -253,14 +315,13 @@ function App() {
             Learn Claude Code through interactive challenges
           </p>
 
+          {auth.guest && (
+            <p className="guest-banner">
+              Playing as guest — progress won't be saved to leaderboard
+            </p>
+          )}
+
           <div className="input-group">
-            <input
-              type="text"
-              placeholder="Access code (if required)"
-              value={accessCode}
-              onChange={(e) => setAccessCode(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && startGame(selectedLesson)}
-            />
             <div className="lesson-select-row">
               <select
                 value={selectedLesson}
@@ -286,18 +347,6 @@ function App() {
 
           {error && <p className="error">{error}</p>}
 
-          <p className="hint">
-            You'll authenticate via Claude CLI in the terminal.{" "}
-            <a
-              href="https://console.anthropic.com/settings/keys"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Get an API key here
-            </a>{" "}
-            if you don't have one.
-          </p>
-
           <div className="progress-indicator">
             <span>
               {progress.completedLessons.length} of {TOTAL_LESSONS} lessons
@@ -312,6 +361,17 @@ function App() {
               />
             </div>
           </div>
+
+          {auth.token && (
+            <p className="hint">
+              Signed in as {auth.email}{" "}
+              <a href="#" onClick={(e) => { e.preventDefault(); logout(); }}>
+                Sign out
+              </a>
+            </p>
+          )}
+
+          {auth.token && <Leaderboard />}
         </div>
       </div>
     );
@@ -417,7 +477,7 @@ function App() {
 
         {levelComplete && (
           <div className="level-complete">
-            <p>🎉 Lesson Complete!</p>
+            <p>Lesson Complete!</p>
             <p className="exit-hint">
               Press <code>Ctrl+C</code> twice to exit Claude
             </p>
@@ -425,7 +485,7 @@ function App() {
               <button onClick={nextLevel}>Next Lesson →</button>
             ) : (
               <button onClick={() => setSession(null)}>
-                🏆 Course Complete!
+                Course Complete!
               </button>
             )}
           </div>
@@ -435,9 +495,7 @@ function App() {
       <div className="terminal-container">
         <Terminal
           sessionId={session.session_id}
-          ttydUrl={session.ttyd_url}
-          ttydPort={session.port}
-          ttydToken={session.ttyd_token}
+          wsToken={session.ws_token}
           onReady={() => console.log("Terminal ready")}
           onLevelComplete={() => {
             setLevelComplete(true);

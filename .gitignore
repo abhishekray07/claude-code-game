@@ -1,22 +1,12 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-venv/
-ENV/
-.env
-*.egg-info/
-dist/
-build/
-
 # Node
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Build artifacts (generated, not committed)
+server/dist/
+server/frontend/
 
 # IDE
 .idea/
@@ -25,12 +15,12 @@ yarn-error.log*
 *.swo
 .DS_Store
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Build outputs
-*.egg
-*.whl
+# Environment
+.env
 .env.local
+
+# Private keys
+worker/private.pem
+worker/private-pkcs8.pem
+*.pem
+!server/keys/*.pem

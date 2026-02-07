@@ -28,9 +28,7 @@ export function useVerificationProgress(sessionId: string | null) {
     if (!sessionId) return;
 
     try {
-      const baseUrl = config.terminalMode === "docker"
-        ? `${config.apiUrl}/api/docker/sessions/${sessionId}/progress`
-        : `${config.apiUrl}/api/sessions/${sessionId}/progress`;
+      const baseUrl = `${config.apiUrl}/api/sessions/${sessionId}/progress`;
 
       const response = await fetch(baseUrl);
       if (response.ok) {
