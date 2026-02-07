@@ -132,14 +132,16 @@ async function handleVerifyRequest(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Claude Code Game <noreply@yourdomain.com>",
+      from: "Claude Code Game <noreply@opslane.com>",
       to: email,
       subject: "Your verification code",
       text: `Your verification code is: ${code}\n\nThis code expires in 5 minutes.`,
     }),
   });
   if (!resendRes.ok) {
-    return jsonResponse({ error: "Failed to send email" }, 500);
+    const resendError = await resendRes.text();
+    console.error("Resend error:", resendRes.status, resendError);
+    return jsonResponse({ error: "Failed to send email", detail: resendError }, 500);
   }
 
   return jsonResponse({ ok: true });
