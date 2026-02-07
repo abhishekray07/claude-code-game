@@ -1,5 +1,5 @@
 {
-  "name": "claude-code-game",
+  "name": "@opslane/claude-code-game",
   "version": "0.1.0",
   "type": "module",
   "bin": {
@@ -12,7 +12,7 @@
   "scripts": {
     "prepublishOnly": "npm run build && cd ../frontend && npm install && npm run build && cd ../server && rm -rf frontend && cp -r ../frontend/dist frontend",
     "build": "tsc",
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch src/cli.ts --no-open",
     "start": "node dist/server.js",
     "test": "vitest run"
   },
@@ -31,6 +31,7 @@
     "@types/jsonwebtoken": "^9.0.0",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.0",
+    "stripe": "^17.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.9.0",
     "vitest": "^3.1.0"
