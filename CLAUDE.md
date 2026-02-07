@@ -1,81 +1,79 @@
 # Claude Code Game
 
-Interactive course for learning Claude Code through hands-on exercises.
+Interactive course for learning Claude Code through hands-on exercises. Runs locally via `npx claude-code-game`.
 
 ## Stack
 
+- **Server**: Node.js + Express + node-pty + WebSocket (`server/`)
 - **Frontend**: React + TypeScript + Vite (`frontend/`)
-- **Backend**: FastAPI + Python (`backend/`)
-- **Sandbox**: Docker container (`claude-game-sandbox`) with ttyd 1.7.7 terminal
-- **Levels**: Course content in `levels/XX-name/` directories
+- **Worker**: Cloudflare Worker for auth + leaderboard (`worker/`)
+- **Levels**: Course content in `server/levels/XX-name/` directories
 
 ## Commands
 
 ```bash
+# Run (end user)
+npx claude-code-game
+
 # Dev
-cd backend && SANDBOX_MODE=docker uvicorn app.main:app --reload --port 8080
-cd frontend && npm run dev
+cd server && npm run dev        # Express server with tsx watch
+cd frontend && npm run dev      # Vite dev server
 
-# Test
-cd backend && pytest
+# Build
+cd server && npm run build      # Compile TS -> dist/
+cd frontend && npm run build    # Build React app
 
-# Rebuild sandbox (REQUIRED after changing levels/ or sandbox/)
-docker build -t claude-game-sandbox:latest -f sandbox/Dockerfile .
+# Copy built frontend into server (required for local server testing)
+rm -r server/frontend; cp -r frontend/dist server/frontend
 
-# Verify sandbox works
-docker run --rm -d --name test-sandbox -p 7777:7681 -e LEVEL_NUMBER=1 claude-game-sandbox:latest
-curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:7777/  # Should return 200
-docker stop test-sandbox
+# Package
+cd server && npm pack           # Create tarball for testing
 ```
 
 ## Verification (run before committing)
 
-1. `cd backend && pytest` — fix failing tests
+1. `cd server && npx tsc --noEmit` — fix type errors
 2. `cd frontend && npx tsc --noEmit` — fix type errors
-3. If sandbox files changed: rebuild image and verify with curl check above
+3. `cd server && npm pack --dry-run` — verify package contents, < 5MB
 
-## Architecture: Terminal WebSocket Proxy
+## Architecture
 
 ```
-Browser (xterm.js) → ws://backend:8080/ws/terminal/{session_id} → ws://container:{port}/ws (ttyd)
+Browser (xterm.js) -> ws://localhost:3000/ws/terminal/{session_id} -> node-pty (local shell)
 ```
 
-The backend proxies WebSocket between the browser and ttyd inside each Docker container. This is required for VPS deployment where containers aren't directly reachable from the browser.
+The server spawns a local PTY (bash) per session. The browser connects via WebSocket and sends/receives terminal data directly. No Docker, no containers.
 
-Key files: `backend/app/api/docker_terminal.py`, `frontend/src/components/Terminal.tsx`
-
-## Don't
-
-- Don't use Ubuntu's `apt install ttyd` — it's 1.6.3 which crashes (SIGSEGV) on WebSocket connections. Use the binary from GitHub releases with SHA256 verification (see Dockerfile).
-- Don't send messages to ttyd without the auth handshake first — ttyd 1.7.x requires `{"AuthToken":""}` as the first WebSocket message, even when no auth is configured.
-- Don't look for ttyd output on message type `1` (49) — ttyd 1.7.x changed the protocol: output is type `0` (48), title is `1` (49), preferences is `2` (50).
-- Don't forget `-W` flag when starting ttyd — since 1.7.4, terminals are readonly by default.
-- Don't modify files in `levels/` without rebuilding the sandbox image — they are baked into the Docker image at build time.
-
-## Sandbox Image: Baked-In Levels
-
-The `levels/` directory is copied into the Docker image at build time (`sandbox/Dockerfile`). When you modify any files in `levels/`, you MUST rebuild:
-
-```bash
-docker build -t claude-game-sandbox:latest -f sandbox/Dockerfile .
-```
+Key files:
+- `server/src/cli.ts` — CLI entry point (`npx claude-code-game`)
+- `server/src/server.ts` — Express server setup, static file serving
+- `server/src/routes/sessions.ts` — Session management, PTY lifecycle, WebSocket handling
+- `server/src/routes/levels.ts` — Level loading from YAML
+- `server/src/verification.ts` — Exercise completion checking
+- `server/src/terminal.ts` — PTY spawning
+- `frontend/src/components/Terminal.tsx` — xterm.js terminal component
 
 ## Lesson Structure
 
-Each lesson lives in `levels/XX-name/`:
+Each lesson lives in `server/levels/XX-name/`:
 ```
-levels/01-context-is-everything/
+server/levels/01-context-is-everything/
 ├── lesson.yaml      # Content + verification rules
-└── exercise/        # Files copied to sandbox workspace
+└── exercise/        # Files copied to user's workspace
 ```
 
 The `number:` field in `lesson.yaml` must match the directory prefix (`01-` = `number: 1`).
 
 Verification rule types: `file_contains`, `min_user_messages`, `command_output`, `glob_exists`
 
+## Don't
+
+- Don't commit `server/dist/` or `server/frontend/` — they are build artifacts
+- Don't edit levels without testing — run the server and verify the lesson loads
+- Don't use zsh-specific syntax in terminal.ts — PTY is hardcoded to bash
+
 ## Debugging Tips
 
-- **Terminal blank?** Check browser console for WebSocket errors. Verify container is running: `docker ps --filter "name=sandbox-"`
-- **Container crashes immediately?** Check `docker events --since 2m` for exit codes. Exit 139 = SIGSEGV (ttyd version issue).
-- **WebSocket connects but no output?** Likely missing auth handshake or wrong message type parsing. Test directly: see `backend/app/api/docker_terminal.py` for the proxy code.
-- **Stale lesson content?** Rebuild sandbox image. The levels are baked in at build time.
+- **Terminal blank?** Check browser console for WebSocket errors
+- **PTY not spawning?** Check that bash is available at `/bin/bash` or `/usr/bin/bash`
+- **Levels not loading?** Verify path resolution — levels are at `server/levels/`, resolved via `__dirname` in levels.ts

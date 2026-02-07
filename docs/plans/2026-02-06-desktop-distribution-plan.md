@@ -1774,7 +1774,33 @@ git commit -m "chore: remove Python backend and Docker sandbox (replaced by Node
 2. **Shell was zsh, not bash** (`terminal.ts`) — macOS `$SHELL` is zsh but PS1/args were bash-only. Prompt was invisible. Fix: hardcode `bash`.
 3. **PTY prompt lost before WS connects** (`sessions.ts`) — PTY spawned at session creation, WS connects at exercise phase. Initial prompt lost. Fix: `pty.write("\n")` after attaching `onData`.
 
-### Phase 3: Ship — NOT YET STARTED
+### Cloudflare Worker Deployment — VERIFIED (2026-02-07)
+
+**Infrastructure provisioned:**
+- D1 database `claude-code-game` (ID: `1f3a3b8f-ac62-41ee-9d0d-0926ce8e74eb`) — schema applied (enrolled + progress tables)
+- KV namespace (ID: `9867a634a9864f8d8d1981044c5207b2`) — rate limiting + verification codes
+- Worker deployed at `https://claude-code-game-api.abhishekray07.workers.dev`
+- Secrets set: `JWT_PRIVATE_KEY` (PKCS8 RSA 2048), `RESEND_API_KEY`
+- RSA public key regenerated at `server/keys/v1.pem`
+- Default Worker URL hardcoded in `auth.ts` + `sessions.ts` (no env config needed)
+- Resend sender: `noreply@opslane.com`
+
+**Auth endpoint tests — 4/4 PASS:**
+- Unenrolled email → `403 Not enrolled`
+- Invalid email format → `400 Invalid email format`
+- Missing email → `400 Email required`
+- Wrong verification code → `401 Invalid or expired code`
+
+**Full auth flow — VERIFIED:**
+- Enrolled test user `abhishek@opslane.com` in D1
+- `POST /verify/request` → email sent via Resend
+- `POST /verify/confirm` with 6-digit code → JWT issued (RS256, kid=v1, iss/aud/exp claims)
+- Browser flow: email → code → authenticated → lesson list
+
+**Bug found and fixed (commit ab69351):**
+1. **Resend API key invalid in Worker** — `echo` piped a trailing newline into `wrangler secret put`. Fix: re-set with `printf '%s'`. Also added error detail logging to the Worker for Resend failures.
+
+### Phase 3: Ship — NOT YET STARTED (Tasks 10–13)
 
 ---
 
