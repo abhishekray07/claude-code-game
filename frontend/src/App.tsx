@@ -44,7 +44,7 @@ interface Session {
 type LessonPhase = "watch" | "exercise";
 
 function App() {
-  const { auth, loading: authLoading, requestCode, confirmCode, continueAsGuest, logout } = useAuth();
+  const { auth, loading: authLoading, requestCode, confirmCode, logout } = useAuth();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -216,8 +216,8 @@ function App() {
     );
   }
 
-  // Auth screen — shown when not authenticated and not guest
-  if (!auth.token && !auth.guest) {
+  // Auth screen — shown when not authenticated
+  if (!auth.token) {
     const handleRequestCode = async () => {
       setAuthError("");
       setAuthSubmitting(true);
@@ -291,15 +291,6 @@ function App() {
           </div>
 
           {authError && <p className="error">{authError}</p>}
-
-          <p className="hint">
-            <a
-              href="#"
-              onClick={(e) => { e.preventDefault(); continueAsGuest(); }}
-            >
-              Continue as Guest
-            </a>
-          </p>
         </div>
       </div>
     );
@@ -314,12 +305,6 @@ function App() {
           <p className="subtitle">
             Learn Claude Code through interactive challenges
           </p>
-
-          {auth.guest && (
-            <p className="guest-banner">
-              Playing as guest — progress won't be saved to leaderboard
-            </p>
-          )}
 
           <div className="input-group">
             <div className="lesson-select-row">
@@ -379,7 +364,8 @@ function App() {
 
   // Watch Phase
   if (phase === "watch") {
-    const hasVideo = session.level.video?.url;
+    const videoUrl = session.level.video?.url;
+    const hasVideo = videoUrl && /youtu\.be\/|youtube\.com\//.test(videoUrl);
 
     return (
       <div className="lesson-screen">
