@@ -324,7 +324,9 @@ sessionsRouter.get("/api/sessions/:sessionId/status", async (req: Request, res: 
   session.lastActivity = Date.now();
   if (!session.completed) {
     const engine = new VerificationEngine(session.workspaceDir);
-    const progress = await engine.getProgress(session.level);
+    const progress = (session.level.steps && session.level.steps.length > 0)
+      ? await engine.getSteppedProgress(session.level)
+      : await engine.getProgress(session.level);
     if (progress.completed) {
       session.completed = true;
       reportCompletion(session.levelNumber);
