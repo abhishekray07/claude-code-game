@@ -1,6 +1,7 @@
 id: "plugins"
 number: 9
 module: "Extensions"
+track: "advanced"
 title: "Installing Plugins"
 
 video:

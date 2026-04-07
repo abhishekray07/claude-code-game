@@ -1,6 +1,7 @@
 id: "read-edit-verify"
 number: 3
 module: "Core Loop"
+track: "advanced"
 title: "Read, Edit, Verify"
 
 video:

@@ -8,8 +8,9 @@ import os from "os";
 import { IncomingMessage } from "http";
 import { Server } from "http";
 import { spawnTerminal } from "../terminal.js";
-import { loadLevelByNumber, Level } from "./levels.js";
+import { loadLevelByNumber, Level, WorkspaceSetup } from "./levels.js";
 import { VerificationEngine } from "../verification.js";
+import { execFileSync } from "child_process";
 import type { IPty } from "node-pty-prebuilt-multiarch";
 
 const DATA_DIR = path.join(os.homedir(), ".claude-code-game");
@@ -61,6 +62,34 @@ function copyExerciseFiles(exerciseDir: string, workspaceDir: string) {
       fs.cpSync(src, dest, { recursive: true });
     } else {
       fs.copyFileSync(src, dest);
+    }
+  }
+}
+
+function runWorkspaceSetup(workspaceDir: string, setup: WorkspaceSetup) {
+  if (setup.git_init) {
+    try {
+      execFileSync("git", ["--version"], { timeout: 5000 });
+    } catch {
+      throw new Error("Git is required. Install it from https://git-scm.com");
+    }
+    execFileSync("git", ["init"], { cwd: workspaceDir, timeout: 10000 });
+    if (setup.git_config) {
+      const ALLOWED_GIT_CONFIG = new Set(["user.name", "user.email"]);
+      for (const [key, value] of Object.entries(setup.git_config)) {
+        if (!ALLOWED_GIT_CONFIG.has(key)) {
+          throw new Error(`Disallowed git config key: ${key}`);
+        }
+        execFileSync("git", ["config", key, value], { cwd: workspaceDir, timeout: 5000 });
+      }
+    }
+  }
+
+  if (setup.files) {
+    for (const file of setup.files) {
+      const filePath = safePath(workspaceDir, file.path);
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, file.content);
     }
   }
 }
@@ -120,6 +149,16 @@ sessionsRouter.post("/api/sessions", (req: Request, res: Response) => {
   const exerciseDir = getExerciseDir(level_number);
   if (exerciseDir) {
     copyExerciseFiles(exerciseDir, workspaceDir);
+  }
+
+  if (level.workspace_setup) {
+    try {
+      runWorkspaceSetup(workspaceDir, level.workspace_setup);
+    } catch (err: any) {
+      fs.rmSync(workspaceDir, { recursive: true, force: true });
+      res.status(500).json({ detail: err.message });
+      return;
+    }
   }
 
   let ptyProcess;
@@ -192,6 +231,15 @@ sessionsRouter.patch("/api/sessions/:sessionId/level", (req: Request, res: Respo
     copyExerciseFiles(exerciseDir, session.workspaceDir);
   }
 
+  if (level.workspace_setup) {
+    try {
+      runWorkspaceSetup(session.workspaceDir, level.workspace_setup);
+    } catch (err: any) {
+      res.status(500).json({ detail: err.message });
+      return;
+    }
+  }
+
   session.pty = spawnTerminal(session.workspaceDir);
   session.level = level;
   session.levelNumber = level_number;
@@ -208,6 +256,31 @@ sessionsRouter.patch("/api/sessions/:sessionId/level", (req: Request, res: Respo
       exercise: level.exercise ?? null,
     },
   });
+});
+
+// POST /api/sessions/:sessionId/save-workspace
+sessionsRouter.post("/api/sessions/:sessionId/save-workspace", (req: Request, res: Response) => {
+  const session = sessions.get(req.params.sessionId as string);
+  if (!session) {
+    res.status(404).json({ detail: "Session not found" });
+    return;
+  }
+
+  const baseName = "expense-tracker";
+  const homeDir = os.homedir();
+  let destDir = path.join(homeDir, baseName);
+  let suffix = 1;
+  while (fs.existsSync(destDir)) {
+    suffix++;
+    destDir = path.join(homeDir, `${baseName}-${suffix}`);
+  }
+
+  try {
+    fs.cpSync(session.workspaceDir, destDir, { recursive: true });
+    res.json({ saved: true, path: destDir });
+  } catch (err: any) {
+    res.status(500).json({ detail: `Failed to save workspace: ${err.message}` });
+  }
 });
 
 // GET /api/sessions/:sessionId/progress

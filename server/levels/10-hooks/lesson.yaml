@@ -1,6 +1,7 @@
 id: "hooks"
 number: 10
 module: "Automation"
+track: "advanced"
 title: "Hooks"
 
 video:
