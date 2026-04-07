@@ -1,0 +1,106 @@
+id: "build-expense-tracker"
+number: 0
+module: "Build"
+title: "Build an Expense Tracker"
+track: "beginner"
+
+exercise:
+  intro: |
+    Build a working expense tracker app in 20 minutes using Claude Code.
+    No coding experience needed — Claude does the coding, you guide the process.
+  objective: "Build a working expense tracker app from scratch using Claude Code"
+
+intro: |
+  Zero to working app. You + Claude Code. 20 minutes.
+
+  You're going to build a real, working expense tracker app — from idea to code to
+  a running app you can use in your browser. Claude Code will do the coding.
+  You'll guide the process.
+
+  Start Claude Code by typing: claude
+
+  Then follow the 5 steps below. The checklist on the left tracks your progress.
+
+workspace_setup:
+  git_init: true
+  git_config:
+    user.name: "Builder"
+    user.email: "builder@local"
+  files:
+    - path: "CLAUDE.md"
+      content: |
+        # Instructions
+
+        You are helping a beginner build a personal expense tracker app.
+
+        Rules:
+        - Use a SINGLE index.html file with inline CSS and JavaScript
+        - No build tools, no frameworks, no npm, no React, no Next.js
+        - Keep it simple: add expenses, see a list, show the total
+        - Use localStorage to save data between page refreshes
+        - Make it look clean with modern CSS (dark theme preferred)
+
+verification:
+  - type: file_exists
+    path: "requirements.md"
+    description: "Step 1: Describe what you want — ask Claude to write a requirements doc"
+
+  - type: file_contains
+    path: "requirements.md"
+    pattern: "(expense|budget|track|spend|cost)"
+    description: "Step 1: Requirements doc mentions expenses or budgeting"
+
+  - type: file_exists
+    path: "plan.md"
+    description: "Step 2: Plan it out — ask Claude to create a build plan"
+
+  - type: file_contains
+    path: "plan.md"
+    pattern: "(feature|structure|step|implement|build|component)"
+    description: "Step 2: Plan describes what to build"
+
+  - type: file_exists
+    path: "index.html"
+    description: "Step 3: Build it — ask Claude to implement the app"
+
+  - type: file_contains
+    path: "index.html"
+    pattern: "(expense|add|amount|total)"
+    description: "Step 3: App handles expenses"
+
+  - type: file_contains
+    path: "index.html"
+    pattern: "<script"
+    description: "Step 4: See it work — ask Claude to open the app in your browser"
+
+  - type: commit_exists
+    pattern: ".*"
+    description: "Step 5: Save your work — ask Claude to commit your code"
+
+hints:
+  - after_minutes: 2
+    text: |
+      Hint: Start Claude by typing `claude` in the terminal, then say something like:
+      "Create a requirements document for a simple expense tracker app. I want to track
+      my daily expenses, see a list of them, and know my total spending."
+  - after_minutes: 5
+    text: |
+      Hint: For Step 2, ask Claude: "Now create a build plan for this expense tracker
+      based on the requirements."
+  - after_minutes: 10
+    text: |
+      Hint: For Step 3, ask Claude: "Build the expense tracker app based on the plan.
+      Use a single HTML file."
+  - after_minutes: 15
+    text: |
+      Hint: For Step 4, ask Claude: "Open index.html in my browser so I can try it."
+      For Step 5: "Commit all the code with a message like 'Initial expense tracker'"
+
+success: |
+  You just built a real app with AI! In 20 minutes you went from zero to a working
+  expense tracker. You learned how to describe what you want, plan it out, build it,
+  test it, and save your work — all with Claude Code.
+
+limits:
+  max_duration_minutes: 30
+  max_claude_messages: 50

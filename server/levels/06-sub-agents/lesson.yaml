@@ -1,6 +1,7 @@
 id: "sub-agents"
 number: 6
 module: "Building Blocks"
+track: "advanced"
 title: "Sub-Agents for Context Isolation"
 
 video:

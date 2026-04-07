@@ -1,6 +1,7 @@
 id: "mcp-servers"
 number: 8
 module: "Extensions"
+track: "advanced"
 title: "MCP Servers (External Sources)"
 
 video:
