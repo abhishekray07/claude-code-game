@@ -1,6 +1,7 @@
 id: "planning-mode"
 number: 4
 module: "Planning"
+track: "advanced"
 title: "Plan Mode for Complex Features"
 
 video:

@@ -1,6 +1,7 @@
 id: "claude-md"
 number: 2
 module: "Mental Model"
+track: "advanced"
 title: "CLAUDE.md - Your Project's Memory"
 
 video:

@@ -1,6 +1,7 @@
 id: "spec-driven"
 number: 5
 module: "Planning"
+track: "advanced"
 title: "Spec-Driven Development"
 
 video:
