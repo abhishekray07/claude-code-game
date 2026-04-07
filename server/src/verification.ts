@@ -4,12 +4,26 @@ import os from "os";
 import crypto from "crypto";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import type { VerificationRule, Level } from "./routes/levels.js";
+import type { VerificationRule, Level, Step } from "./routes/levels.js";
 
 const execFileAsync = promisify(execFile);
 
 // Allowlist of safe commands for command_output verification
 const ALLOWED_COMMANDS = new Set(["git", "node", "npx", "cat", "ls", "wc", "grep", "test", "head", "tail"]);
+
+export interface StepProgress {
+  id: string;
+  name: string;
+  subtitle: string;
+  passed: boolean;
+  rules: Array<{
+    type: string;
+    passed: boolean;
+    description?: string;
+  }>;
+  passed_count: number;
+  total_count: number;
+}
 
 export interface ProgressResult {
   rules: Array<{
@@ -22,6 +36,8 @@ export interface ProgressResult {
   completed: boolean;
   passed_count: number;
   total_count: number;
+  steps?: StepProgress[];
+  current_step?: number;
 }
 
 export class VerificationEngine {
@@ -44,6 +60,64 @@ export class VerificationEngine {
       completed: results.every((r) => r.passed),
       passed_count: results.filter((r) => r.passed).length,
       total_count: results.length,
+    };
+  }
+
+  async getSteppedProgress(level: Level): Promise<ProgressResult> {
+    if (!level.steps || level.steps.length === 0) {
+      return this.getProgress(level);
+    }
+
+    const steps: StepProgress[] = [];
+    let currentStep = 0;
+    let foundIncomplete = false;
+
+    for (let i = 0; i < level.steps.length; i++) {
+      const step = level.steps[i];
+      const ruleResults = [];
+
+      for (const rule of step.verification) {
+        const passed = await this.checkRule(rule);
+        ruleResults.push({
+          type: rule.type,
+          passed,
+          description: rule.description,
+        });
+      }
+
+      const stepPassed = ruleResults.every((r) => r.passed);
+      steps.push({
+        id: step.id,
+        name: step.name,
+        subtitle: step.subtitle,
+        passed: stepPassed,
+        rules: ruleResults,
+        passed_count: ruleResults.filter((r) => r.passed).length,
+        total_count: ruleResults.length,
+      });
+
+      if (!stepPassed && !foundIncomplete) {
+        currentStep = i;
+        foundIncomplete = true;
+      }
+    }
+
+    // Past-the-end sentinel when all steps complete
+    if (!foundIncomplete) {
+      currentStep = level.steps.length;
+    }
+
+    const allRules = steps.flatMap((s) =>
+      s.rules.map((r) => ({ ...r, tool_name: undefined, path: undefined }))
+    );
+
+    return {
+      rules: allRules,
+      completed: steps.every((s) => s.passed),
+      passed_count: allRules.filter((r) => r.passed).length,
+      total_count: allRules.length,
+      steps,
+      current_step: currentStep,
     };
   }
 
