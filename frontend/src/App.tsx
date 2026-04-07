@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Terminal } from "./components/Terminal";
 import { VideoPlayer } from "./components/VideoPlayer";
 import { Leaderboard } from "./components/Leaderboard";
+import { StepSidebar } from "./components/StepSidebar";
 import { useAuth } from "./hooks/useAuth";
 import { useProgress } from "./hooks/useProgress";
 import {
@@ -26,6 +27,19 @@ interface Exercise {
   objective: string;
 }
 
+interface GuidedPrompt {
+  text: string;
+  label: string;
+}
+
+interface LevelStep {
+  id: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  guided_prompts: GuidedPrompt[];
+}
+
 interface Level {
   number: number;
   title: string;
@@ -33,6 +47,7 @@ interface Level {
   intro?: string;
   video?: Video;
   exercise?: Exercise;
+  steps?: LevelStep[];
 }
 
 interface Session {
@@ -259,7 +274,7 @@ function App() {
         <div className="start-content">
           <h1>Build Your First App with AI</h1>
           <p className="subtitle">
-            Zero to working app. You + Claude Code. 20 minutes.
+            Zero to working app in 6 steps. You + Claude Code.
           </p>
 
           <div className="input-group">
@@ -511,39 +526,60 @@ function App() {
         </div>
 
         <div className="instructions">
-          {session.level.intro && (
-            <div className="intro" style={{whiteSpace: 'pre-line', marginBottom: '1rem'}}>
-              {session.level.intro}
-            </div>
-          )}
-          {session.level.exercise && (
-            <p className="objective">
-              <strong>Objective:</strong> {session.level.exercise.objective}
-            </p>
+          {/* Step-based sidebar for lessons with steps */}
+          {session.level.steps && session.level.steps.length > 0 ? (
+            <>
+              <StepSidebar
+                steps={session.level.steps}
+                verificationProgress={verificationProgress}
+                levelComplete={levelComplete}
+              />
+
+              {verificationProgress && (
+                <div className="progress-summary">
+                  Step {Math.min((verificationProgress.current_step ?? 0) + 1, session.level.steps.length)} of{" "}
+                  {session.level.steps.length}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Original flat sidebar for non-step lessons */}
+              {session.level.intro && (
+                <div className="intro" style={{whiteSpace: 'pre-line', marginBottom: '1rem'}}>
+                  {session.level.intro}
+                </div>
+              )}
+              {session.level.exercise && (
+                <p className="objective">
+                  <strong>Objective:</strong> {session.level.exercise.objective}
+                </p>
+              )}
+
+              {verificationProgress && verificationProgress.rules.length > 0 && (
+                <div className="verification-progress">
+                  <h4>Progress</h4>
+                  <ul className="verification-checklist">
+                    {verificationProgress.rules.map((rule, index) => (
+                      <li key={index} className={rule.passed ? "passed" : "pending"}>
+                        <span className="check-icon">
+                          {rule.passed ? "\u2713" : "\u25CB"}
+                        </span>
+                        <span className="check-label">
+                          {getVerificationLabel(rule.type, rule)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="progress-summary">
+                    {verificationProgress.passed_count} of {verificationProgress.total_count} complete
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Verification Progress Checklist */}
-          {verificationProgress && verificationProgress.rules.length > 0 && (
-            <div className="verification-progress">
-              <h4>Progress</h4>
-              <ul className="verification-checklist">
-                {verificationProgress.rules.map((rule, index) => (
-                  <li key={index} className={rule.passed ? "passed" : "pending"}>
-                    <span className="check-icon">
-                      {rule.passed ? "\u2713" : "\u25CB"}
-                    </span>
-                    <span className="check-label">
-                      {getVerificationLabel(rule.type, rule)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="progress-summary">
-                {verificationProgress.passed_count} of {verificationProgress.total_count} complete
-              </div>
-            </div>
-          )}
-
+          {/* Completion message — same for both layouts */}
           {levelComplete && (
             <div className="completion-message">
               {isKillerLesson ? (

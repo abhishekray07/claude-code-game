@@ -192,6 +192,7 @@ sessionsRouter.post("/api/sessions", (req: Request, res: Response) => {
       intro: level.intro,
       video: level.video ?? null,
       exercise: level.exercise ?? null,
+      steps: level.steps ?? null,
     },
   });
 });
@@ -254,6 +255,7 @@ sessionsRouter.patch("/api/sessions/:sessionId/level", (req: Request, res: Respo
       intro: level.intro,
       video: level.video ?? null,
       exercise: level.exercise ?? null,
+      steps: level.steps ?? null,
     },
   });
 });
@@ -293,9 +295,12 @@ sessionsRouter.get("/api/sessions/:sessionId/progress", async (req: Request, res
   }
   session.lastActivity = Date.now();
   const engine = new VerificationEngine(session.workspaceDir);
-  const progress = await engine.getProgress(session.level);
 
-  if (progress.completed) {
+  const progress = (session.level.steps && session.level.steps.length > 0)
+    ? await engine.getSteppedProgress(session.level)
+    : await engine.getProgress(session.level);
+
+  if (progress.completed && !session.completed) {
     session.completed = true;
     reportCompletion(session.levelNumber);
   }
