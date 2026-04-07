@@ -13,7 +13,7 @@ import {
 } from "./hooks/useVerificationProgress";
 import { config } from "./config";
 
-const TOTAL_LESSONS = 11; // Lessons 1-11
+const TOTAL_LESSONS = 11; // Lessons 1-11 (Advanced Track)
 const STATUS_POLL_INTERVAL = 5000; // 5 seconds
 
 interface Video {
@@ -60,6 +60,10 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
+  // Save workspace state
+  const [savedPath, setSavedPath] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
   // Verification progress for current exercise
   const { progress: verificationProgress } = useVerificationProgress(
     phase === "exercise" ? session?.session_id ?? null : null
@@ -67,6 +71,9 @@ function App() {
 
   // Status polling
   const pollIntervalRef = useRef<number | null>(null);
+
+  const isFirstRun = progress.completedLessons.length === 0;
+  const isKillerLesson = session?.level.number === 0;
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -113,6 +120,7 @@ function App() {
     setLoading(true);
     setError("");
     setLevelComplete(false);
+    setSavedPath(null);
     setPhase("watch");
     stopPolling();
 
@@ -146,6 +154,32 @@ function App() {
     }
   };
 
+  // Auto-start exercise for killer lesson (no video phase)
+  useEffect(() => {
+    if (isKillerLesson && phase === "watch" && session) {
+      startExercise();
+    }
+  }, [isKillerLesson, phase, session]);
+
+  const saveWorkspace = async () => {
+    if (!session) return;
+    setSaving(true);
+    try {
+      const response = await fetch(
+        `${config.apiUrl}/api/sessions/${session.session_id}/save-workspace`,
+        { method: "POST" }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setSavedPath(data.path);
+      }
+    } catch (e) {
+      console.error("Save error:", e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const nextLevel = async () => {
     if (!session) return;
 
@@ -158,6 +192,7 @@ function App() {
 
     setLoading(true);
     setLevelComplete(false);
+    setSavedPath(null);
     setPhase("watch");
     stopPolling();
 
@@ -201,6 +236,7 @@ function App() {
       }
       setSession(null);
       setLevelComplete(false);
+      setSavedPath(null);
     }
   };
 
@@ -216,8 +252,41 @@ function App() {
     );
   }
 
-  // Auth screen — shown when not authenticated
-  if (!auth.token) {
+  // First-run hero — no auth needed
+  if (!session && isFirstRun) {
+    return (
+      <div className="start-screen">
+        <div className="start-content">
+          <h1>Build Your First App with AI</h1>
+          <p className="subtitle">
+            Zero to working app. You + Claude Code. 20 minutes.
+          </p>
+
+          <div className="input-group">
+            <button
+              onClick={() => startGame(0)}
+              disabled={loading}
+              className="hero-start-btn"
+            >
+              {loading ? "Setting up..." : "Start Building"}
+            </button>
+          </div>
+
+          {error && <p className="error">{error}</p>}
+
+          <p className="hint" style={{ marginTop: "2rem" }}>
+            Already done this?{" "}
+            <a href="#" onClick={(e) => { e.preventDefault(); markComplete(0); }}>
+              Skip to Advanced Track
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auth screen — shown to returning users when not authenticated
+  if (!session && !isFirstRun && !auth.token) {
     const handleRequestCode = async () => {
       setAuthError("");
       setAuthSubmitting(true);
@@ -291,12 +360,18 @@ function App() {
           </div>
 
           {authError && <p className="error">{authError}</p>}
+
+          <p className="hint" style={{ marginTop: "1rem" }}>
+            <a href="#" onClick={(e) => { e.preventDefault(); startGame(0); }}>
+              Skip sign-in — just start building
+            </a>
+          </p>
         </div>
       </div>
     );
   }
 
-  // Start screen
+  // Lesson picker — for returning users
   if (!session) {
     return (
       <div className="start-screen">
@@ -306,6 +381,23 @@ function App() {
             Learn Claude Code through interactive challenges
           </p>
 
+          {/* Killer lesson card */}
+          <div className="input-group" style={{ marginBottom: "1.5rem" }}>
+            <button
+              onClick={() => startGame(0)}
+              disabled={loading}
+              className="hero-start-btn"
+            >
+              {progress.completedLessons.includes(0)
+                ? "Replay: Build an Expense Tracker"
+                : "Build an Expense Tracker (20 min)"}
+            </button>
+          </div>
+
+          {/* Advanced Track */}
+          <p className="subtitle" style={{ fontSize: "0.875rem", marginTop: "1rem" }}>
+            Advanced Track
+          </p>
           <div className="input-group">
             <div className="lesson-select-row">
               <select
@@ -332,20 +424,24 @@ function App() {
 
           {error && <p className="error">{error}</p>}
 
-          <div className="progress-indicator">
-            <span>
-              {progress.completedLessons.length} of {TOTAL_LESSONS} lessons
-              complete
-            </span>
-            <div className="progress-bar">
-              <div
-                className="progress-fill"
-                style={{
-                  width: `${(progress.completedLessons.length / TOTAL_LESSONS) * 100}%`,
-                }}
-              />
-            </div>
-          </div>
+          {(() => {
+            const advancedCount = progress.completedLessons.filter(n => n >= 1).length;
+            return (
+              <div className="progress-indicator">
+                <span>
+                  {advancedCount} of {TOTAL_LESSONS} advanced lessons complete
+                </span>
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${(advancedCount / TOTAL_LESSONS) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })()}
 
           {auth.token && (
             <p className="hint">
@@ -364,6 +460,8 @@ function App() {
 
   // Watch Phase
   if (phase === "watch") {
+    if (isKillerLesson) return null; // Will auto-transition via useEffect
+
     const videoUrl = session.level.video?.url;
     const hasVideo = videoUrl && /youtu\.be\/|youtube\.com\//.test(videoUrl);
 
@@ -406,7 +504,9 @@ function App() {
       <div className="sidebar">
         <div className="level-info">
           <span className="module-badge">{session.level.module}</span>
-          <span className="level-badge">Lesson {session.level.number}</span>
+          {!isKillerLesson && (
+            <span className="level-badge">Lesson {session.level.number}</span>
+          )}
           <h2>{session.level.title}</h2>
         </div>
 
@@ -446,7 +546,26 @@ function App() {
 
           {levelComplete && (
             <div className="completion-message">
-              <p>Nice work! You've completed this lesson's objective.</p>
+              {isKillerLesson ? (
+                <>
+                  <p>You built a real app with AI!</p>
+                  {savedPath ? (
+                    <p style={{ fontSize: "0.875rem", color: "#4ade80" }}>
+                      Saved to: {savedPath}
+                    </p>
+                  ) : (
+                    <button
+                      onClick={saveWorkspace}
+                      disabled={saving}
+                      style={{ marginTop: "0.5rem" }}
+                    >
+                      {saving ? "Saving..." : "Save my code"}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p>Nice work! You've completed this lesson's objective.</p>
+              )}
             </div>
           )}
         </div>
@@ -467,7 +586,11 @@ function App() {
             <p className="exit-hint">
               Press <code>Ctrl+C</code> twice to exit Claude
             </p>
-            {session.level.number < TOTAL_LESSONS ? (
+            {isKillerLesson ? (
+              <button onClick={() => { setSession(null); setLevelComplete(false); setSavedPath(null); }}>
+                Explore Advanced Track →
+              </button>
+            ) : session.level.number < TOTAL_LESSONS ? (
               <button onClick={nextLevel}>Next Lesson →</button>
             ) : (
               <button onClick={() => setSession(null)}>

@@ -26,18 +26,31 @@ export interface Hint {
   text: string;
 }
 
+export interface WorkspaceFile {
+  path: string;
+  content: string;
+}
+
+export interface WorkspaceSetup {
+  git_init?: boolean;
+  git_config?: Record<string, string>;
+  files?: WorkspaceFile[];
+}
+
 export interface Level {
   id: string;
   number: number;
   title: string;
   module: string;
   intro: string;
+  track?: string;
   video?: { url: string; duration_seconds: number };
   exercise?: { intro: string; objective: string };
   verification: VerificationRule[];
   hints: Hint[];
   success: string;
   limits: { max_duration_minutes: number; max_claude_messages: number };
+  workspace_setup?: WorkspaceSetup;
 }
 
 export function loadLevelByNumber(num: number): Level | null {
@@ -55,15 +68,15 @@ export function loadLevelByNumber(num: number): Level | null {
   return null;
 }
 
-export function listLevels(): Array<{ id: string; number: number; title: string; module: string }> {
-  const levels: Array<{ id: string; number: number; title: string; module: string }> = [];
+export function listLevels(): Array<{ id: string; number: number; title: string; module: string; track?: string }> {
+  const levels: Array<{ id: string; number: number; title: string; module: string; track?: string }> = [];
   const entries = fs.readdirSync(LEVELS_DIR, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.isDirectory() && /^\d{2}-/.test(entry.name)) {
       const lessonPath = path.join(LEVELS_DIR, entry.name, "lesson.yaml");
       if (fs.existsSync(lessonPath)) {
         const raw = YAML.parse(fs.readFileSync(lessonPath, "utf-8"));
-        levels.push({ id: raw.id, number: raw.number, title: raw.title, module: raw.module });
+        levels.push({ id: raw.id, number: raw.number, title: raw.title, module: raw.module, track: raw.track });
       }
     }
   }
@@ -71,12 +84,13 @@ export function listLevels(): Array<{ id: string; number: number; title: string;
 }
 
 function parseLevel(data: Record<string, any>): Level {
-  return {
+  const level: Level = {
     id: data.id,
     number: data.number,
     title: data.title,
     module: data.module,
     intro: data.intro,
+    track: data.track,
     video: data.video ? { url: data.video.url, duration_seconds: data.video.duration_seconds } : undefined,
     exercise: data.exercise ? { intro: data.exercise.intro, objective: data.exercise.objective } : undefined,
     verification: (data.verification || []).map((r: any) => ({
@@ -96,6 +110,19 @@ function parseLevel(data: Record<string, any>): Level {
       max_claude_messages: data.limits?.max_claude_messages ?? 20,
     },
   };
+
+  if (data.workspace_setup) {
+    level.workspace_setup = {
+      git_init: data.workspace_setup.git_init ?? false,
+      git_config: data.workspace_setup.git_config,
+      files: (data.workspace_setup.files || []).map((f: any) => ({
+        path: f.path,
+        content: f.content,
+      })),
+    };
+  }
+
+  return level;
 }
 
 // GET /api/levels

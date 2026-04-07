@@ -1,6 +1,7 @@
 id: "worktrees"
 number: 11
 module: "Safety"
+track: "advanced"
 title: "Git Worktrees for Parallel Work"
 
 video:

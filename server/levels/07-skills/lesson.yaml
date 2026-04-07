@@ -1,6 +1,7 @@
 id: "skills"
 number: 7
 module: "Building Blocks"
+track: "advanced"
 title: "Skills (Auto-Activating Commands)"
 
 video:
