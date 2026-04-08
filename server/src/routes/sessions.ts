@@ -10,6 +10,7 @@ import { Server } from "http";
 import { spawnTerminal } from "../terminal.js";
 import { loadLevelByNumber, Level, WorkspaceSetup } from "./levels.js";
 import { VerificationEngine } from "../verification.js";
+import type { ProgressResult } from "../verification.js";
 import { execFileSync } from "child_process";
 import type { IPty } from "node-pty-prebuilt-multiarch";
 
@@ -26,6 +27,7 @@ interface Session {
   workspaceDir: string;
   completed: boolean;
   lastActivity: number;
+  passedRules: Set<string>;
 }
 
 const sessions = new Map<string, Session>();
@@ -133,7 +135,7 @@ process.on("exit", () => {
 
 // POST /api/sessions
 sessionsRouter.post("/api/sessions", (req: Request, res: Response) => {
-  const { level_number = 1 } = req.body;
+  const { level_number = 1, workspace_dir } = req.body;
 
   const level = loadLevelByNumber(level_number);
   if (!level) {
@@ -143,21 +145,32 @@ sessionsRouter.post("/api/sessions", (req: Request, res: Response) => {
 
   const sessionId = uuidv4().slice(0, 8);
   const wsToken = crypto.randomBytes(16).toString("hex");
-  const workspaceDir = path.join(WORKSPACES_DIR, sessionId);
-  fs.mkdirSync(workspaceDir, { recursive: true });
 
-  const exerciseDir = getExerciseDir(level_number);
-  if (exerciseDir) {
-    copyExerciseFiles(exerciseDir, workspaceDir);
-  }
+  // Reuse existing workspace if provided (for dev testing / resuming)
+  const reuseWorkspace = workspace_dir
+    ? path.join(WORKSPACES_DIR, path.basename(workspace_dir))
+    : null;
 
-  if (level.workspace_setup) {
-    try {
-      runWorkspaceSetup(workspaceDir, level.workspace_setup);
-    } catch (err: any) {
-      fs.rmSync(workspaceDir, { recursive: true, force: true });
-      res.status(500).json({ detail: err.message });
-      return;
+  const workspaceDir = reuseWorkspace && fs.existsSync(reuseWorkspace)
+    ? reuseWorkspace
+    : path.join(WORKSPACES_DIR, sessionId);
+
+  if (!reuseWorkspace || !fs.existsSync(reuseWorkspace)) {
+    fs.mkdirSync(workspaceDir, { recursive: true });
+
+    const exerciseDir = getExerciseDir(level_number);
+    if (exerciseDir) {
+      copyExerciseFiles(exerciseDir, workspaceDir);
+    }
+
+    if (level.workspace_setup) {
+      try {
+        runWorkspaceSetup(workspaceDir, level.workspace_setup);
+      } catch (err: any) {
+        fs.rmSync(workspaceDir, { recursive: true, force: true });
+        res.status(500).json({ detail: err.message });
+        return;
+      }
     }
   }
 
@@ -179,6 +192,7 @@ sessionsRouter.post("/api/sessions", (req: Request, res: Response) => {
     workspaceDir,
     completed: false,
     lastActivity: Date.now(),
+    passedRules: new Set(),
   });
 
   res.json({
@@ -192,6 +206,7 @@ sessionsRouter.post("/api/sessions", (req: Request, res: Response) => {
       intro: level.intro,
       video: level.video ?? null,
       exercise: level.exercise ?? null,
+      steps: level.steps ?? null,
     },
   });
 });
@@ -254,6 +269,7 @@ sessionsRouter.patch("/api/sessions/:sessionId/level", (req: Request, res: Respo
       intro: level.intro,
       video: level.video ?? null,
       exercise: level.exercise ?? null,
+      steps: level.steps ?? null,
     },
   });
 });
@@ -283,6 +299,49 @@ sessionsRouter.post("/api/sessions/:sessionId/save-workspace", (req: Request, re
   }
 });
 
+function applyStickyProgress(progress: ProgressResult, session: Session): void {
+  // For step-based lessons, make passed rules sticky per session
+  if (progress.steps) {
+    for (const step of progress.steps) {
+      for (let i = 0; i < step.rules.length; i++) {
+        const key = `${step.id}:${step.rules[i].type}:${step.rules[i].description || i}`;
+        if (step.rules[i].passed) {
+          session.passedRules.add(key);
+        } else if (session.passedRules.has(key)) {
+          step.rules[i].passed = true;
+        }
+      }
+      step.passed_count = step.rules.filter((r) => r.passed).length;
+      step.passed = step.rules.every((r) => r.passed);
+    }
+    // Recompute top-level fields
+    const allRules = progress.steps.flatMap((s) => s.rules);
+    progress.passed_count = allRules.filter((r) => r.passed).length;
+    progress.completed = progress.steps.every((s) => s.passed);
+    // Recompute current_step
+    let currentStep = progress.steps.length;
+    for (let i = 0; i < progress.steps.length; i++) {
+      if (!progress.steps[i].passed) {
+        currentStep = i;
+        break;
+      }
+    }
+    progress.current_step = currentStep;
+  } else {
+    // Flat lessons: make rules sticky too
+    for (let i = 0; i < progress.rules.length; i++) {
+      const key = `flat:${progress.rules[i].type}:${progress.rules[i].description || i}`;
+      if (progress.rules[i].passed) {
+        session.passedRules.add(key);
+      } else if (session.passedRules.has(key)) {
+        progress.rules[i].passed = true;
+      }
+    }
+    progress.passed_count = progress.rules.filter((r) => r.passed).length;
+    progress.completed = progress.rules.every((r) => r.passed);
+  }
+}
+
 // GET /api/sessions/:sessionId/progress
 sessionsRouter.get("/api/sessions/:sessionId/progress", async (req: Request, res: Response) => {
   const sessionId = req.params.sessionId as string;
@@ -293,9 +352,14 @@ sessionsRouter.get("/api/sessions/:sessionId/progress", async (req: Request, res
   }
   session.lastActivity = Date.now();
   const engine = new VerificationEngine(session.workspaceDir);
-  const progress = await engine.getProgress(session.level);
 
-  if (progress.completed) {
+  const progress = (session.level.steps && session.level.steps.length > 0)
+    ? await engine.getSteppedProgress(session.level)
+    : await engine.getProgress(session.level);
+
+  applyStickyProgress(progress, session);
+
+  if (progress.completed && !session.completed) {
     session.completed = true;
     reportCompletion(session.levelNumber);
   }
@@ -319,7 +383,10 @@ sessionsRouter.get("/api/sessions/:sessionId/status", async (req: Request, res: 
   session.lastActivity = Date.now();
   if (!session.completed) {
     const engine = new VerificationEngine(session.workspaceDir);
-    const progress = await engine.getProgress(session.level);
+    const progress = (session.level.steps && session.level.steps.length > 0)
+      ? await engine.getSteppedProgress(session.level)
+      : await engine.getProgress(session.level);
+    applyStickyProgress(progress, session);
     if (progress.completed) {
       session.completed = true;
       reportCompletion(session.levelNumber);
