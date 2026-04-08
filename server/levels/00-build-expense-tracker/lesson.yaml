@@ -37,14 +37,11 @@ steps:
     guided_prompts:
       - text: "I want to build a simple expense tracker app. Before writing any code, ask me clarifying questions about what I want."
         label: "Start the conversation"
-      - text: "Write up the requirements in a file called requirements.md"
+      - text: "Write up the requirements in requirements.md. Include: user stories (\"As a user, I want X so that Y\"), key implementation decisions, and what's explicitly out of scope."
         label: "Save the requirements"
-      - text: "Now create a build plan in plan.md and wait for my approval before coding"
+      - text: "Create a build plan in plan.md. Break it into phases — each phase should deliver a working feature end-to-end (not \"do all HTML first, then all CSS\"). Include acceptance criteria for each phase so we know when it's done. Wait for my approval before coding."
         label: "Create the plan"
     verification:
-      - type: min_user_messages
-        min_count: 3
-        description: "Have a conversation with Claude"
       - type: file_exists
         path: "requirements.md"
         description: "Requirements doc created"
@@ -52,6 +49,10 @@ steps:
         path: "requirements.md"
         pattern: "(expense|budget|track|spend|cost)"
         description: "Requirements describe the app"
+      - type: file_contains
+        path: "requirements.md"
+        pattern: "(user stor|as a user|as a |I want|so that|out of scope|not included)"
+        description: "Requirements include user stories"
       - type: file_exists
         path: "plan.md"
         description: "Build plan created"
@@ -59,6 +60,10 @@ steps:
         path: "plan.md"
         pattern: "(step|task|implement|build|phase|component)"
         description: "Plan has actionable steps"
+      - type: file_contains
+        path: "plan.md"
+        pattern: "(acceptance|criteria|\\[ \\]|done when|verify|demoable|complete when)"
+        description: "Plan includes acceptance criteria"
 
   - id: "build"
     name: "Build"
@@ -102,7 +107,7 @@ steps:
         label: "Run tests"
     verification:
       - type: glob_exists
-        pattern: "test*"
+        pattern: "*test*"
         description: "Test file created"
 
   - id: "claude-md"
@@ -146,8 +151,9 @@ steps:
       - text: "Fix the issues you found"
         label: "Apply fixes"
     verification:
-      - type: file_changed
+      - type: file_contains
         path: "index.html"
+        pattern: "(addEventListener|try|catch|trim|parseInt|parseFloat|Number|isNaN|disabled|required|pattern|class=)"
         description: "Code improved after review"
 
   - id: "ship"

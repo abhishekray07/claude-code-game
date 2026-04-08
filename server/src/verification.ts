@@ -137,7 +137,8 @@ export class VerificationEngine {
         case "tool_called_with_path": return this.checkToolCalledWithPath(rule.tool_name, rule.pattern);
         default: return false;
       }
-    } catch {
+    } catch (err) {
+      console.error(`[verification] checkRule ${rule.type} failed:`, err);
       return false;
     }
   }
@@ -216,7 +217,7 @@ export class VerificationEngine {
     const fullPath = path.join(this.workspaceDir, filePath);
     if (!fs.existsSync(fullPath)) return false;
     const content = fs.readFileSync(fullPath, "utf-8");
-    return new RegExp(pattern).test(content);
+    return new RegExp(pattern, "i").test(content);
   }
 
   private checkFileChanged(filePath?: string): boolean {
@@ -283,18 +284,34 @@ export class VerificationEngine {
 
   private checkGlobExists(pattern?: string): boolean {
     if (!pattern) return false;
-    const fullPattern = path.join(this.workspaceDir, pattern);
-    const { globSync } = require("glob");
-    const matches = globSync(fullPattern);
-    return matches.length > 0;
+    // Simple glob: convert *pattern* to regex and match against directory entries
+    const regexStr = pattern
+      .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+      .replace(/\*/g, ".*")
+      .replace(/\?/g, ".");
+    const regex = new RegExp(`^${regexStr}$`, "i");
+    try {
+      const entries = fs.readdirSync(this.workspaceDir, { recursive: true }) as string[];
+      return entries.some((e) => regex.test(path.basename(e)));
+    } catch {
+      return false;
+    }
   }
 
   private checkHomeGlobExists(pattern?: string): boolean {
     if (!pattern) return false;
-    const fullPattern = path.join(os.homedir(), ".claude", pattern);
-    const { globSync } = require("glob");
-    const matches = globSync(fullPattern);
-    return matches.length > 0;
+    const dir = path.join(os.homedir(), ".claude");
+    const regexStr = pattern
+      .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+      .replace(/\*/g, ".*")
+      .replace(/\?/g, ".");
+    const regex = new RegExp(`^${regexStr}$`, "i");
+    try {
+      const entries = fs.readdirSync(dir, { recursive: true }) as string[];
+      return entries.some((e) => regex.test(path.basename(e)));
+    } catch {
+      return false;
+    }
   }
 
   private checkToolCalledWithPath(toolName?: string, pathPattern?: string): boolean {
