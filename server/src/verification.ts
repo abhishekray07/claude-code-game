@@ -4,12 +4,26 @@ import os from "os";
 import crypto from "crypto";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import type { VerificationRule, Level } from "./routes/levels.js";
+import type { VerificationRule, Level, Step } from "./routes/levels.js";
 
 const execFileAsync = promisify(execFile);
 
 // Allowlist of safe commands for command_output verification
 const ALLOWED_COMMANDS = new Set(["git", "node", "npx", "cat", "ls", "wc", "grep", "test", "head", "tail"]);
+
+export interface StepProgress {
+  id: string;
+  name: string;
+  subtitle: string;
+  passed: boolean;
+  rules: Array<{
+    type: string;
+    passed: boolean;
+    description?: string;
+  }>;
+  passed_count: number;
+  total_count: number;
+}
 
 export interface ProgressResult {
   rules: Array<{
@@ -22,6 +36,8 @@ export interface ProgressResult {
   completed: boolean;
   passed_count: number;
   total_count: number;
+  steps?: StepProgress[];
+  current_step?: number;
 }
 
 export class VerificationEngine {
@@ -47,6 +63,64 @@ export class VerificationEngine {
     };
   }
 
+  async getSteppedProgress(level: Level): Promise<ProgressResult> {
+    if (!level.steps || level.steps.length === 0) {
+      return this.getProgress(level);
+    }
+
+    const steps: StepProgress[] = [];
+    let currentStep = 0;
+    let foundIncomplete = false;
+
+    for (let i = 0; i < level.steps.length; i++) {
+      const step = level.steps[i];
+      const ruleResults = [];
+
+      for (const rule of step.verification) {
+        const passed = await this.checkRule(rule);
+        ruleResults.push({
+          type: rule.type,
+          passed,
+          description: rule.description,
+        });
+      }
+
+      const stepPassed = ruleResults.every((r) => r.passed);
+      steps.push({
+        id: step.id,
+        name: step.name,
+        subtitle: step.subtitle,
+        passed: stepPassed,
+        rules: ruleResults,
+        passed_count: ruleResults.filter((r) => r.passed).length,
+        total_count: ruleResults.length,
+      });
+
+      if (!stepPassed && !foundIncomplete) {
+        currentStep = i;
+        foundIncomplete = true;
+      }
+    }
+
+    // Past-the-end sentinel when all steps complete
+    if (!foundIncomplete) {
+      currentStep = level.steps.length;
+    }
+
+    const allRules = steps.flatMap((s) =>
+      s.rules.map((r) => ({ ...r, tool_name: undefined, path: undefined }))
+    );
+
+    return {
+      rules: allRules,
+      completed: steps.every((s) => s.passed),
+      passed_count: allRules.filter((r) => r.passed).length,
+      total_count: allRules.length,
+      steps,
+      current_step: currentStep,
+    };
+  }
+
   private async checkRule(rule: VerificationRule): Promise<boolean> {
     try {
       switch (rule.type) {
@@ -63,7 +137,8 @@ export class VerificationEngine {
         case "tool_called_with_path": return this.checkToolCalledWithPath(rule.tool_name, rule.pattern);
         default: return false;
       }
-    } catch {
+    } catch (err) {
+      console.error(`[verification] checkRule ${rule.type} failed:`, err);
       return false;
     }
   }
@@ -142,7 +217,7 @@ export class VerificationEngine {
     const fullPath = path.join(this.workspaceDir, filePath);
     if (!fs.existsSync(fullPath)) return false;
     const content = fs.readFileSync(fullPath, "utf-8");
-    return new RegExp(pattern).test(content);
+    return new RegExp(pattern, "i").test(content);
   }
 
   private checkFileChanged(filePath?: string): boolean {
@@ -209,18 +284,34 @@ export class VerificationEngine {
 
   private checkGlobExists(pattern?: string): boolean {
     if (!pattern) return false;
-    const fullPattern = path.join(this.workspaceDir, pattern);
-    const { globSync } = require("glob");
-    const matches = globSync(fullPattern);
-    return matches.length > 0;
+    // Simple glob: convert *pattern* to regex and match against directory entries
+    const regexStr = pattern
+      .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+      .replace(/\*/g, ".*")
+      .replace(/\?/g, ".");
+    const regex = new RegExp(`^${regexStr}$`, "i");
+    try {
+      const entries = fs.readdirSync(this.workspaceDir, { recursive: true }) as string[];
+      return entries.some((e) => regex.test(path.basename(e)));
+    } catch {
+      return false;
+    }
   }
 
   private checkHomeGlobExists(pattern?: string): boolean {
     if (!pattern) return false;
-    const fullPattern = path.join(os.homedir(), ".claude", pattern);
-    const { globSync } = require("glob");
-    const matches = globSync(fullPattern);
-    return matches.length > 0;
+    const dir = path.join(os.homedir(), ".claude");
+    const regexStr = pattern
+      .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+      .replace(/\*/g, ".*")
+      .replace(/\?/g, ".");
+    const regex = new RegExp(`^${regexStr}$`, "i");
+    try {
+      const entries = fs.readdirSync(dir, { recursive: true }) as string[];
+      return entries.some((e) => regex.test(path.basename(e)));
+    } catch {
+      return false;
+    }
   }
 
   private checkToolCalledWithPath(toolName?: string, pathPattern?: string): boolean {

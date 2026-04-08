@@ -6,101 +6,183 @@ track: "beginner"
 
 exercise:
   intro: |
-    Build a working expense tracker app in 20 minutes using Claude Code.
+    Build a working expense tracker app using Claude Code.
     No coding experience needed — Claude does the coding, you guide the process.
-  objective: "Build a working expense tracker app from scratch using Claude Code"
+  objective: "Build a working expense tracker app by learning the professional dev workflow"
 
 intro: |
-  Zero to working app. You + Claude Code. 20 minutes.
+  Zero to working app. You + Claude Code. 6 steps.
 
-  You're going to build a real, working expense tracker app — from idea to code to
-  a running app you can use in your browser. Claude Code will do the coding.
-  You'll guide the process.
+  You'll learn the professional workflow: define what to build, plan it,
+  code it, verify it works, teach Claude about your project, review
+  the code, and ship it.
 
   Start Claude Code by typing: claude
-
-  Then follow the 5 steps below. The checklist on the left tracks your progress.
 
 workspace_setup:
   git_init: true
   git_config:
     user.name: "Builder"
     user.email: "builder@local"
-  files:
-    - path: "CLAUDE.md"
-      content: |
-        # Instructions
 
-        You are helping a beginner build a personal expense tracker app.
+steps:
+  - id: "define-and-plan"
+    name: "Define & Plan"
+    subtitle: "Have a conversation first"
+    description: |
+      Don't just say "build X." Talk to Claude first —
+      ask it to understand what you want before writing code.
 
-        Rules:
-        - Use a SINGLE index.html file with inline CSS and JavaScript
-        - No build tools, no frameworks, no npm, no React, no Next.js
-        - Keep it simple: add expenses, see a list, show the total
-        - Use localStorage to save data between page refreshes
-        - Make it look clean with modern CSS (dark theme preferred)
+      A good conversation up front saves hours of rework.
+    guided_prompts:
+      - text: "I want to build a simple expense tracker app. Before writing any code, ask me clarifying questions about what I want."
+        label: "Start the conversation"
+      - text: "Write up the requirements in requirements.md. Include: user stories (\"As a user, I want X so that Y\"), key implementation decisions, and what's explicitly out of scope."
+        label: "Save the requirements"
+      - text: "Create a build plan in plan.md. Break it into phases — each phase should deliver a working feature end-to-end (not \"do all HTML first, then all CSS\"). Include acceptance criteria for each phase so we know when it's done. Wait for my approval before coding."
+        label: "Create the plan"
+    verification:
+      - type: file_exists
+        path: "requirements.md"
+        description: "Requirements doc created"
+      - type: file_contains
+        path: "requirements.md"
+        pattern: "(expense|budget|track|spend|cost)"
+        description: "Requirements describe the app"
+      - type: file_contains
+        path: "requirements.md"
+        pattern: "(user stor|as a user|as a |I want|so that|out of scope|not included)"
+        description: "Requirements include user stories"
+      - type: file_exists
+        path: "plan.md"
+        description: "Build plan created"
+      - type: file_contains
+        path: "plan.md"
+        pattern: "(step|task|implement|build|phase|component)"
+        description: "Plan has actionable steps"
+      - type: file_contains
+        path: "plan.md"
+        pattern: "(acceptance|criteria|\\[ \\]|done when|verify|demoable|complete when)"
+        description: "Plan includes acceptance criteria"
 
-verification:
-  - type: file_exists
-    path: "requirements.md"
-    description: "Step 1: Describe what you want — ask Claude to write a requirements doc"
+  - id: "build"
+    name: "Build"
+    subtitle: "Let Claude implement the plan"
+    description: |
+      Now let Claude build from the plan. Give it clear
+      constraints so it stays focused.
 
-  - type: file_contains
-    path: "requirements.md"
-    pattern: "(expense|budget|track|spend|cost)"
-    description: "Step 1: Requirements doc mentions expenses or budgeting"
+      Watch Claude work — it reads files, edits code,
+      and iterates. This is the core loop.
+    guided_prompts:
+      - text: "Start building the expense tracker based on the plan. Use a single index.html file with inline CSS and JavaScript. No frameworks, no npm, no build tools. Use localStorage for persistence."
+        label: "Start building"
+    verification:
+      - type: file_exists
+        path: "index.html"
+        description: "App file created"
+      - type: file_contains
+        path: "index.html"
+        pattern: "<script"
+        description: "App has JavaScript"
+      - type: file_contains
+        path: "index.html"
+        pattern: "(expense|add|amount|total)"
+        description: "App handles expenses"
 
-  - type: file_exists
-    path: "plan.md"
-    description: "Step 2: Plan it out — ask Claude to create a build plan"
+  - id: "verify"
+    name: "Verify"
+    subtitle: "Prove it works"
+    description: |
+      Code that isn't tested is code that might break.
+      Ask Claude to prove the app works.
 
-  - type: file_contains
-    path: "plan.md"
-    pattern: "(feature|structure|step|implement|build|component)"
-    description: "Step 2: Plan describes what to build"
+      "It looks right" isn't enough — tests are proof.
+    guided_prompts:
+      - text: "Open index.html in my browser so I can see the app"
+        label: "See the app"
+      - text: "Write tests for the core functions. Create a test file that verifies adding expenses, listing them, and calculating totals."
+        label: "Write tests"
+      - text: "Run the tests and fix any failures"
+        label: "Run tests"
+    verification:
+      - type: glob_exists
+        pattern: "*test*"
+        description: "Test file created"
 
-  - type: file_exists
-    path: "index.html"
-    description: "Step 3: Build it — ask Claude to implement the app"
+  - id: "claude-md"
+    name: "CLAUDE.md"
+    subtitle: "Teach Claude about your project"
+    description: |
+      CLAUDE.md onboards Claude like a new teammate. It tells
+      Claude how to test, where code lives, and what rules
+      to follow — so it works effectively every session.
+    guided_prompts:
+      - text: "How do I run the tests for this project?"
+        label: "Ask without CLAUDE.md (notice Claude has to search)"
+      - text: "Create a CLAUDE.md file that teaches any developer or AI about this project. Include: what the app does, how to run it, how to test it, the file structure, and the rules (single HTML file, no frameworks, localStorage)."
+        label: "Create the project guide"
+      - text: "How do I run the tests for this project?"
+        label: "Ask again — instant answer this time"
+    verification:
+      - type: file_exists
+        path: "CLAUDE.md"
+        description: "Project guide created"
+      - type: file_contains
+        path: "CLAUDE.md"
+        pattern: "(test|verify|run)"
+        description: "Explains how to test"
+      - type: file_contains
+        path: "CLAUDE.md"
+        pattern: "(html|index|structure|file)"
+        description: "Documents project structure"
 
-  - type: file_contains
-    path: "index.html"
-    pattern: "(expense|add|amount|total)"
-    description: "Step 3: App handles expenses"
+  - id: "review"
+    name: "Review"
+    subtitle: "Quality gates before you're done"
+    description: |
+      Before shipping, review your work. Ask Claude to look
+      at the code with fresh eyes and suggest improvements.
 
-  - type: file_contains
-    path: "index.html"
-    pattern: "<script"
-    description: "Step 4: See it work — ask Claude to open the app in your browser"
+      Quality gates catch problems before users do.
+    guided_prompts:
+      - text: "Review the code in index.html. Look for bugs, missing edge cases, or things that could be simpler. List what you find."
+        label: "Ask for a review"
+      - text: "Fix the issues you found"
+        label: "Apply fixes"
+    verification:
+      - type: file_contains
+        path: "index.html"
+        pattern: "(addEventListener|try|catch|trim|parseInt|parseFloat|Number|isNaN|disabled|required|pattern|class=)"
+        description: "Code improved after review"
 
-  - type: commit_exists
-    pattern: ".*"
-    description: "Step 5: Save your work — ask Claude to commit your code"
-
-hints:
-  - after_minutes: 2
-    text: |
-      Hint: Start Claude by typing `claude` in the terminal, then say something like:
-      "Create a requirements document for a simple expense tracker app. I want to track
-      my daily expenses, see a list of them, and know my total spending."
-  - after_minutes: 5
-    text: |
-      Hint: For Step 2, ask Claude: "Now create a build plan for this expense tracker
-      based on the requirements."
-  - after_minutes: 10
-    text: |
-      Hint: For Step 3, ask Claude: "Build the expense tracker app based on the plan.
-      Use a single HTML file."
-  - after_minutes: 15
-    text: |
-      Hint: For Step 4, ask Claude: "Open index.html in my browser so I can try it."
-      For Step 5: "Commit all the code with a message like 'Initial expense tracker'"
+  - id: "ship"
+    name: "Ship"
+    subtitle: "Commit with confidence"
+    description: |
+      Save your work. A good commit message is a gift to
+      your future self.
+    guided_prompts:
+      - text: "Commit all the code with a descriptive commit message that explains what we built and how."
+        label: "Ship it"
+    verification:
+      - type: commit_exists
+        pattern: ".*"
+        description: "Code committed"
 
 success: |
-  You just built a real app with AI! In 20 minutes you went from zero to a working
-  expense tracker. You learned how to describe what you want, plan it out, build it,
-  test it, and save your work — all with Claude Code.
+  You just built a real app with AI — and learned the professional workflow!
+
+  Here's what you practiced:
+  1. Define & Plan — talked to Claude before coding
+  2. Build — let Claude implement from a plan
+  3. Verify — proved it works with tests
+  4. CLAUDE.md — onboarded Claude to your project
+  5. Review — quality-checked before shipping
+  6. Ship — committed with a clear message
+
+  This workflow works for any project, not just expense trackers.
 
 limits:
-  max_duration_minutes: 30
-  max_claude_messages: 50
+  max_duration_minutes: 45
+  max_claude_messages: 80

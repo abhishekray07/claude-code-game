@@ -9,11 +9,23 @@ interface VerificationRule {
   description?: string;
 }
 
-interface VerificationProgress {
+interface StepProgress {
+  id: string;
+  name: string;
+  subtitle: string;
+  passed: boolean;
+  rules: VerificationRule[];
+  passed_count: number;
+  total_count: number;
+}
+
+export interface VerificationProgress {
   rules: VerificationRule[];
   completed: boolean;
   passed_count: number;
   total_count: number;
+  steps?: StepProgress[];
+  current_step?: number;
 }
 
 const POLL_INTERVAL = 3000; // 3 seconds

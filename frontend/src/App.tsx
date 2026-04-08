@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Terminal } from "./components/Terminal";
 import { VideoPlayer } from "./components/VideoPlayer";
 import { Leaderboard } from "./components/Leaderboard";
+import { StepSidebar } from "./components/StepSidebar";
 import { useAuth } from "./hooks/useAuth";
 import { useProgress } from "./hooks/useProgress";
 import {
@@ -12,8 +13,9 @@ import {
   getVerificationLabel,
 } from "./hooks/useVerificationProgress";
 import { config } from "./config";
+import type { LevelStep } from "./types";
 
-const TOTAL_LESSONS = 11; // Lessons 1-11 (Advanced Track)
+const TOTAL_LESSONS = 11; // Advanced track (hidden for now)
 const STATUS_POLL_INTERVAL = 5000; // 5 seconds
 
 interface Video {
@@ -33,6 +35,7 @@ interface Level {
   intro?: string;
   video?: Video;
   exercise?: Exercise;
+  steps?: LevelStep[];
 }
 
 interface Session {
@@ -50,7 +53,6 @@ function App() {
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
   const [phase, setPhase] = useState<LessonPhase>("watch");
-  const [selectedLesson, setSelectedLesson] = useState(1);
   const { progress, markComplete } = useProgress();
 
   // Auth screen state
@@ -73,7 +75,7 @@ function App() {
   const pollIntervalRef = useRef<number | null>(null);
 
   const isFirstRun = progress.completedLessons.length === 0;
-  const isKillerLesson = session?.level.number === 0;
+  const isIntroLesson = session?.level.number === 0;
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -125,11 +127,15 @@ function App() {
     stopPolling();
 
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const workspaceDir = urlParams.get("workspace");
+
       const response = await fetch(`${config.apiUrl}/api/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           level_number: levelNumber,
+          ...(workspaceDir ? { workspace_dir: workspaceDir } : {}),
         }),
       });
 
@@ -156,10 +162,10 @@ function App() {
 
   // Auto-start exercise for killer lesson (no video phase)
   useEffect(() => {
-    if (isKillerLesson && phase === "watch" && session) {
+    if (isIntroLesson && phase === "watch" && session) {
       startExercise();
     }
-  }, [isKillerLesson, phase, session]);
+  }, [isIntroLesson, phase, session]);
 
   const saveWorkspace = async () => {
     if (!session) return;
@@ -259,7 +265,7 @@ function App() {
         <div className="start-content">
           <h1>Build Your First App with AI</h1>
           <p className="subtitle">
-            Zero to working app. You + Claude Code. 20 minutes.
+            Zero to working app in 6 steps. You + Claude Code.
           </p>
 
           <div className="input-group">
@@ -274,12 +280,7 @@ function App() {
 
           {error && <p className="error">{error}</p>}
 
-          <p className="hint" style={{ marginTop: "2rem" }}>
-            Already done this?{" "}
-            <a href="#" onClick={(e) => { e.preventDefault(); markComplete(0); }}>
-              Skip to Advanced Track
-            </a>
-          </p>
+          {/* Advanced track link hidden for now */}
         </div>
       </div>
     );
@@ -394,54 +395,7 @@ function App() {
             </button>
           </div>
 
-          {/* Advanced Track */}
-          <p className="subtitle" style={{ fontSize: "0.875rem", marginTop: "1rem" }}>
-            Advanced Track
-          </p>
-          <div className="input-group">
-            <div className="lesson-select-row">
-              <select
-                value={selectedLesson}
-                onChange={(e) => setSelectedLesson(Number(e.target.value))}
-                className="lesson-select"
-              >
-                {Array.from({ length: TOTAL_LESSONS }, (_, i) => i + 1).map(
-                  (n) => (
-                    <option key={n} value={n}>
-                      Lesson {n}
-                    </option>
-                  )
-                )}
-              </select>
-              <button
-                onClick={() => startGame(selectedLesson)}
-                disabled={loading}
-              >
-                {loading ? "Starting..." : "Start"}
-              </button>
-            </div>
-          </div>
-
-          {error && <p className="error">{error}</p>}
-
-          {(() => {
-            const advancedCount = progress.completedLessons.filter(n => n >= 1).length;
-            return (
-              <div className="progress-indicator">
-                <span>
-                  {advancedCount} of {TOTAL_LESSONS} advanced lessons complete
-                </span>
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${(advancedCount / TOTAL_LESSONS) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            );
-          })()}
+          {/* Advanced Track hidden for now */}
 
           {auth.token && (
             <p className="hint">
@@ -460,7 +414,7 @@ function App() {
 
   // Watch Phase
   if (phase === "watch") {
-    if (isKillerLesson) return null; // Will auto-transition via useEffect
+    if (isIntroLesson) return null; // Will auto-transition via useEffect
 
     const videoUrl = session.level.video?.url;
     const hasVideo = videoUrl && /youtu\.be\/|youtube\.com\//.test(videoUrl);
@@ -504,49 +458,70 @@ function App() {
       <div className="sidebar">
         <div className="level-info">
           <span className="module-badge">{session.level.module}</span>
-          {!isKillerLesson && (
+          {!isIntroLesson && (
             <span className="level-badge">Lesson {session.level.number}</span>
           )}
           <h2>{session.level.title}</h2>
         </div>
 
         <div className="instructions">
-          {session.level.intro && (
-            <div className="intro" style={{whiteSpace: 'pre-line', marginBottom: '1rem'}}>
-              {session.level.intro}
-            </div>
-          )}
-          {session.level.exercise && (
-            <p className="objective">
-              <strong>Objective:</strong> {session.level.exercise.objective}
-            </p>
+          {/* Step-based sidebar for lessons with steps */}
+          {session.level.steps && session.level.steps.length > 0 ? (
+            <>
+              <StepSidebar
+                steps={session.level.steps}
+                verificationProgress={verificationProgress}
+                levelComplete={levelComplete}
+              />
+
+              {verificationProgress && (
+                <div className="progress-summary">
+                  Step {Math.min((verificationProgress.current_step ?? 0) + 1, session.level.steps.length)} of{" "}
+                  {session.level.steps.length}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Original flat sidebar for non-step lessons */}
+              {session.level.intro && (
+                <div className="intro" style={{whiteSpace: 'pre-line', marginBottom: '1rem'}}>
+                  {session.level.intro}
+                </div>
+              )}
+              {session.level.exercise && (
+                <p className="objective">
+                  <strong>Objective:</strong> {session.level.exercise.objective}
+                </p>
+              )}
+
+              {verificationProgress && verificationProgress.rules.length > 0 && (
+                <div className="verification-progress">
+                  <h4>Progress</h4>
+                  <ul className="verification-checklist">
+                    {verificationProgress.rules.map((rule, index) => (
+                      <li key={index} className={rule.passed ? "passed" : "pending"}>
+                        <span className="check-icon">
+                          {rule.passed ? "\u2713" : "\u25CB"}
+                        </span>
+                        <span className="check-label">
+                          {getVerificationLabel(rule.type, rule)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="progress-summary">
+                    {verificationProgress.passed_count} of {verificationProgress.total_count} complete
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Verification Progress Checklist */}
-          {verificationProgress && verificationProgress.rules.length > 0 && (
-            <div className="verification-progress">
-              <h4>Progress</h4>
-              <ul className="verification-checklist">
-                {verificationProgress.rules.map((rule, index) => (
-                  <li key={index} className={rule.passed ? "passed" : "pending"}>
-                    <span className="check-icon">
-                      {rule.passed ? "\u2713" : "\u25CB"}
-                    </span>
-                    <span className="check-label">
-                      {getVerificationLabel(rule.type, rule)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="progress-summary">
-                {verificationProgress.passed_count} of {verificationProgress.total_count} complete
-              </div>
-            </div>
-          )}
-
+          {/* Completion message — same for both layouts */}
           {levelComplete && (
             <div className="completion-message">
-              {isKillerLesson ? (
+              {isIntroLesson ? (
                 <>
                   <p>You built a real app with AI!</p>
                   {savedPath ? (
@@ -586,9 +561,9 @@ function App() {
             <p className="exit-hint">
               Press <code>Ctrl+C</code> twice to exit Claude
             </p>
-            {isKillerLesson ? (
+            {isIntroLesson ? (
               <button onClick={() => { setSession(null); setLevelComplete(false); setSavedPath(null); }}>
-                Explore Advanced Track →
+                Done
               </button>
             ) : session.level.number < TOTAL_LESSONS ? (
               <button onClick={nextLevel}>Next Lesson →</button>

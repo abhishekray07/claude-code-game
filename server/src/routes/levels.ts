@@ -21,6 +21,20 @@ export interface VerificationRule {
   description?: string;
 }
 
+export interface GuidedPrompt {
+  text: string;
+  label: string;
+}
+
+export interface Step {
+  id: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  guided_prompts: GuidedPrompt[];
+  verification: VerificationRule[];
+}
+
 export interface Hint {
   after_minutes: number;
   text: string;
@@ -47,6 +61,7 @@ export interface Level {
   video?: { url: string; duration_seconds: number };
   exercise?: { intro: string; objective: string };
   verification: VerificationRule[];
+  steps?: Step[];
   hints: Hint[];
   success: string;
   limits: { max_duration_minutes: number; max_claude_messages: number };
@@ -110,6 +125,29 @@ function parseLevel(data: Record<string, any>): Level {
       max_claude_messages: data.limits?.max_claude_messages ?? 20,
     },
   };
+
+  if (data.steps) {
+    level.steps = data.steps.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      subtitle: s.subtitle || "",
+      description: s.description || "",
+      guided_prompts: (s.guided_prompts || []).map((p: any) => ({
+        text: p.text,
+        label: p.label || "",
+      })),
+      verification: (s.verification || []).map((r: any) => ({
+        type: r.type,
+        tool_name: r.tool_name,
+        min_count: r.min_count,
+        path: r.path,
+        pattern: r.pattern,
+        command: r.command,
+        expected_output: r.expected_output,
+        description: r.description,
+      })),
+    }));
+  }
 
   if (data.workspace_setup) {
     level.workspace_setup = {
