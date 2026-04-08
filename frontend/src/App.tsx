@@ -13,8 +13,9 @@ import {
   getVerificationLabel,
 } from "./hooks/useVerificationProgress";
 import { config } from "./config";
+import type { LevelStep } from "./types";
 
-const TOTAL_LESSONS = 11; // Lessons 1-11 (Advanced Track)
+const TOTAL_LESSONS = 11; // Advanced track (hidden for now)
 const STATUS_POLL_INTERVAL = 5000; // 5 seconds
 
 interface Video {
@@ -25,19 +26,6 @@ interface Video {
 interface Exercise {
   intro: string;
   objective: string;
-}
-
-interface GuidedPrompt {
-  text: string;
-  label: string;
-}
-
-interface LevelStep {
-  id: string;
-  name: string;
-  subtitle: string;
-  description: string;
-  guided_prompts: GuidedPrompt[];
 }
 
 interface Level {
@@ -65,7 +53,6 @@ function App() {
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
   const [phase, setPhase] = useState<LessonPhase>("watch");
-  const [selectedLesson, setSelectedLesson] = useState(1);
   const { progress, markComplete } = useProgress();
 
   // Auth screen state
@@ -88,7 +75,7 @@ function App() {
   const pollIntervalRef = useRef<number | null>(null);
 
   const isFirstRun = progress.completedLessons.length === 0;
-  const isKillerLesson = session?.level.number === 0;
+  const isIntroLesson = session?.level.number === 0;
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -140,11 +127,15 @@ function App() {
     stopPolling();
 
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const workspaceDir = urlParams.get("workspace");
+
       const response = await fetch(`${config.apiUrl}/api/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           level_number: levelNumber,
+          ...(workspaceDir ? { workspace_dir: workspaceDir } : {}),
         }),
       });
 
@@ -171,10 +162,10 @@ function App() {
 
   // Auto-start exercise for killer lesson (no video phase)
   useEffect(() => {
-    if (isKillerLesson && phase === "watch" && session) {
+    if (isIntroLesson && phase === "watch" && session) {
       startExercise();
     }
-  }, [isKillerLesson, phase, session]);
+  }, [isIntroLesson, phase, session]);
 
   const saveWorkspace = async () => {
     if (!session) return;
@@ -289,12 +280,7 @@ function App() {
 
           {error && <p className="error">{error}</p>}
 
-          <p className="hint" style={{ marginTop: "2rem" }}>
-            Already done this?{" "}
-            <a href="#" onClick={(e) => { e.preventDefault(); markComplete(0); }}>
-              Skip to Advanced Track
-            </a>
-          </p>
+          {/* Advanced track link hidden for now */}
         </div>
       </div>
     );
@@ -409,54 +395,7 @@ function App() {
             </button>
           </div>
 
-          {/* Advanced Track */}
-          <p className="subtitle" style={{ fontSize: "0.875rem", marginTop: "1rem" }}>
-            Advanced Track
-          </p>
-          <div className="input-group">
-            <div className="lesson-select-row">
-              <select
-                value={selectedLesson}
-                onChange={(e) => setSelectedLesson(Number(e.target.value))}
-                className="lesson-select"
-              >
-                {Array.from({ length: TOTAL_LESSONS }, (_, i) => i + 1).map(
-                  (n) => (
-                    <option key={n} value={n}>
-                      Lesson {n}
-                    </option>
-                  )
-                )}
-              </select>
-              <button
-                onClick={() => startGame(selectedLesson)}
-                disabled={loading}
-              >
-                {loading ? "Starting..." : "Start"}
-              </button>
-            </div>
-          </div>
-
-          {error && <p className="error">{error}</p>}
-
-          {(() => {
-            const advancedCount = progress.completedLessons.filter(n => n >= 1).length;
-            return (
-              <div className="progress-indicator">
-                <span>
-                  {advancedCount} of {TOTAL_LESSONS} advanced lessons complete
-                </span>
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${(advancedCount / TOTAL_LESSONS) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            );
-          })()}
+          {/* Advanced Track hidden for now */}
 
           {auth.token && (
             <p className="hint">
@@ -475,7 +414,7 @@ function App() {
 
   // Watch Phase
   if (phase === "watch") {
-    if (isKillerLesson) return null; // Will auto-transition via useEffect
+    if (isIntroLesson) return null; // Will auto-transition via useEffect
 
     const videoUrl = session.level.video?.url;
     const hasVideo = videoUrl && /youtu\.be\/|youtube\.com\//.test(videoUrl);
@@ -519,7 +458,7 @@ function App() {
       <div className="sidebar">
         <div className="level-info">
           <span className="module-badge">{session.level.module}</span>
-          {!isKillerLesson && (
+          {!isIntroLesson && (
             <span className="level-badge">Lesson {session.level.number}</span>
           )}
           <h2>{session.level.title}</h2>
@@ -582,7 +521,7 @@ function App() {
           {/* Completion message — same for both layouts */}
           {levelComplete && (
             <div className="completion-message">
-              {isKillerLesson ? (
+              {isIntroLesson ? (
                 <>
                   <p>You built a real app with AI!</p>
                   {savedPath ? (
@@ -622,9 +561,9 @@ function App() {
             <p className="exit-hint">
               Press <code>Ctrl+C</code> twice to exit Claude
             </p>
-            {isKillerLesson ? (
+            {isIntroLesson ? (
               <button onClick={() => { setSession(null); setLevelComplete(false); setSavedPath(null); }}>
-                Explore Advanced Track →
+                Done
               </button>
             ) : session.level.number < TOTAL_LESSONS ? (
               <button onClick={nextLevel}>Next Lesson →</button>
