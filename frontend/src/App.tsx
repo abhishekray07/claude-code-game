@@ -250,7 +250,6 @@ function App() {
             <button
               onClick={() => startGame(0)}
               disabled={loading}
-              className="hero-start-btn"
             >
               {loading ? "Setting up..." : "Start Building"}
             </button>
@@ -279,7 +278,6 @@ function App() {
             <button
               onClick={() => startGame(0)}
               disabled={loading}
-              className="hero-start-btn"
             >
               {progress.completedLessons.includes(0)
                 ? "Replay: Build an Expense Tracker"

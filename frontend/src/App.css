@@ -35,20 +35,6 @@
   margin-bottom: 1rem;
 }
 
-.input-group input {
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #333;
-  background: #1a1a2e;
-  color: #fff;
-  font-size: 1rem;
-}
-
-.input-group input:focus {
-  outline: none;
-  border-color: #6366f1;
-}
-
 .input-group button {
   padding: 12px 24px;
   border-radius: 8px;
@@ -71,40 +57,9 @@
   cursor: not-allowed;
 }
 
-.lesson-select-row {
-  display: flex;
-  gap: 10px;
-}
-
-.lesson-select {
-  flex: 1;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #333;
-  background: #1a1a2e;
-  color: #fff;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.lesson-select:focus {
-  outline: none;
-  border-color: #6366f1;
-}
-
 .error {
   color: #f87171;
   margin-top: 1rem;
-}
-
-.hint {
-  color: #666;
-  font-size: 0.875rem;
-  margin-top: 1.5rem;
-}
-
-.hint a {
-  color: #6366f1;
 }
 
 /* Game Screen */
@@ -163,11 +118,6 @@
   line-height: 1.6;
 }
 
-.instructions .action {
-  margin-top: 16px;
-  color: #fff;
-}
-
 .instructions code {
   background: #333;
   padding: 2px 8px;
@@ -182,66 +132,6 @@
   border-left: 3px solid #6366f1;
   border-radius: 4px;
   color: #ccc;
-}
-
-.step-by-step {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #333;
-}
-
-.step-by-step h3 {
-  color: #888;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 12px;
-}
-
-.step-by-step pre {
-  font-family: inherit;
-  font-size: 0.85rem;
-  line-height: 1.7;
-  color: #bbb;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  margin: 0;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 12px;
-  border-radius: 6px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.commands {
-  margin-top: auto;
-  padding-top: 24px;
-  border-top: 1px solid #333;
-}
-
-.commands h3 {
-  color: #666;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 12px;
-}
-
-.commands ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.commands li {
-  color: #888;
-  font-size: 0.875rem;
-  margin-bottom: 8px;
-}
-
-.commands code {
-  color: #6366f1;
-  font-family: 'Menlo', monospace;
 }
 
 /* Level Complete */
@@ -366,31 +256,6 @@
 .rewatch-btn:hover {
   border-color: #6366f1;
   color: #fff;
-}
-
-/* Progress Indicator */
-.progress-indicator {
-  margin-top: 2rem;
-  width: 100%;
-}
-
-.progress-indicator span {
-  font-size: 0.875rem;
-  color: #888;
-}
-
-.progress-bar {
-  height: 4px;
-  background: #333;
-  border-radius: 2px;
-  margin-top: 8px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6366f1, #a855f7);
-  transition: width 0.3s ease;
 }
 
 /* Verification Progress Checklist */
