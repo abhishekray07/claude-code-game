@@ -2,7 +2,6 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
-import { authRouter } from "./routes/auth.js";
 import { levelsRouter } from "./routes/levels.js";
 import { sessionsRouter, setupWebSocket } from "./routes/sessions.js";
 
@@ -17,13 +16,12 @@ export function createApp() {
     if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     }
     if (_req.method === "OPTIONS") { res.sendStatus(204); return; }
     next();
   });
 
-  app.use(authRouter);
   app.use(levelsRouter);
   app.use(sessionsRouter);
 
@@ -46,13 +44,7 @@ export function startServer(port: number, host = "127.0.0.1"): Promise<number> {
   setupWebSocket(server);
 
   return new Promise<number>((resolve, reject) => {
-    server.on("error", (err: NodeJS.ErrnoException) => {
-      if (err.code === "EADDRINUSE") {
-        reject(err);
-      } else {
-        reject(err);
-      }
-    });
+    server.on("error", reject);
     server.listen(port, host, () => {
       const addr = server.address();
       const actualPort = typeof addr === "object" && addr ? addr.port : port;

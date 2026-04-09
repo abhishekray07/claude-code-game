@@ -96,24 +96,6 @@ function runWorkspaceSetup(workspaceDir: string, setup: WorkspaceSetup) {
   }
 }
 
-// Report completion to cloud (fire and forget)
-function reportCompletion(levelNumber: number) {
-  try {
-    const authPath = path.join(os.homedir(), ".claude-code-game", "auth.json");
-    if (!fs.existsSync(authPath)) return;
-    const auth = JSON.parse(fs.readFileSync(authPath, "utf-8"));
-    if (!auth.token) return;
-    const workerUrl = process.env.WORKER_URL || "https://claude-code-game-api.abhishekray07.workers.dev";
-    fetch(`${workerUrl}/events`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${auth.token}`,
-      },
-      body: JSON.stringify({ level_number: levelNumber }),
-    }).catch(() => {}); // fire and forget
-  } catch {}
-}
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 setInterval(() => {
@@ -361,7 +343,6 @@ sessionsRouter.get("/api/sessions/:sessionId/progress", async (req: Request, res
 
   if (progress.completed && !session.completed) {
     session.completed = true;
-    reportCompletion(session.levelNumber);
   }
 
   res.json({
@@ -389,15 +370,10 @@ sessionsRouter.get("/api/sessions/:sessionId/status", async (req: Request, res: 
     applyStickyProgress(progress, session);
     if (progress.completed) {
       session.completed = true;
-      reportCompletion(session.levelNumber);
     }
   }
   res.json({ completed: session.completed });
 });
-
-export function getSession(sessionId: string): Session | undefined {
-  return sessions.get(sessionId);
-}
 
 // WebSocket setup
 export function setupWebSocket(server: Server) {
