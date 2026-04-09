@@ -8,7 +8,7 @@ An interactive course that teaches Claude Code through hands-on exercises. Run i
 ## Quick Start
 
 ```bash
-npx @opslane/claude-code-game
+npx @claude-code-camp/game
 ```
 
 Opens a local terminal UI in your browser with guided lessons, a real Claude Code session, and automatic verification when you complete each exercise.
