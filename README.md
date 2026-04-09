@@ -2,7 +2,7 @@
 
 An interactive course that teaches Claude Code through hands-on exercises. Run it locally — no Docker, no cloud sandboxes.
 
-[![Watch the demo](docs/images/demo-thumbnail.png)](https://github.com/abhishekray07/claude-code-game/releases/download/v0.1.2/claude-code-game-demo-compressed.mp4)
+[![Watch the demo](docs/images/demo-thumbnail.png)](https://github.com/user-attachments/assets/77acab6b-9466-421c-8b07-73e06cf7eaa1)
 
 ## Quick Start
 
