@@ -1,16 +1,20 @@
 {
-  "name": "@opslane/claude-code-game",
-  "version": "0.1.0",
+  "name": "@claude-code-camp/game",
+  "version": "0.1.1",
   "type": "module",
   "bin": {
     "claude-code-game": "./dist/cli.js"
   },
-  "files": ["dist/", "frontend/", "levels/"],
+  "files": [
+    "dist/",
+    "frontend/",
+    "levels/"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
-    "prepublishOnly": "npm run build && cd ../frontend && npm install && npm run build && cd ../server && rm -rf frontend && cp -r ../frontend/dist frontend",
+    "prepublishOnly": "npm run build && cd ../frontend && npm install && npm run build && cd ../server && rm -rf frontend && cp -r ../frontend/dist frontend && cp ../README.md README.md",
     "build": "tsc",
     "dev": "tsx watch src/cli.ts --no-open",
     "start": "node dist/server.js",
