@@ -4,9 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Terminal } from "./components/Terminal";
 import { VideoPlayer } from "./components/VideoPlayer";
-import { Leaderboard } from "./components/Leaderboard";
 import { StepSidebar } from "./components/StepSidebar";
-import { useAuth } from "./hooks/useAuth";
 import { useProgress } from "./hooks/useProgress";
 import {
   useVerificationProgress,
@@ -47,20 +45,12 @@ interface Session {
 type LessonPhase = "watch" | "exercise";
 
 function App() {
-  const { auth, loading: authLoading, requestCode, confirmCode, logout } = useAuth();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [levelComplete, setLevelComplete] = useState(false);
   const [phase, setPhase] = useState<LessonPhase>("watch");
   const { progress, markComplete } = useProgress();
-
-  // Auth screen state
-  const [authEmail, setAuthEmail] = useState("");
-  const [authCode, setAuthCode] = useState("");
-  const [authStep, setAuthStep] = useState<"email" | "code">("email");
-  const [authError, setAuthError] = useState("");
-  const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // Save workspace state
   const [savedPath, setSavedPath] = useState<string | null>(null);
@@ -246,19 +236,7 @@ function App() {
     }
   };
 
-  // Auth loading screen
-  if (authLoading) {
-    return (
-      <div className="start-screen">
-        <div className="start-content">
-          <h1>Claude Code Game</h1>
-          <p className="subtitle">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // First-run hero — no auth needed
+  // First-run hero
   if (!session && isFirstRun) {
     return (
       <div className="start-screen">
@@ -281,92 +259,6 @@ function App() {
           {error && <p className="error">{error}</p>}
 
           {/* Advanced track link hidden for now */}
-        </div>
-      </div>
-    );
-  }
-
-  // Auth screen — shown to returning users when not authenticated
-  if (!session && !isFirstRun && !auth.token) {
-    const handleRequestCode = async () => {
-      setAuthError("");
-      setAuthSubmitting(true);
-      try {
-        await requestCode(authEmail);
-        setAuthStep("code");
-      } catch (e) {
-        setAuthError(e instanceof Error ? e.message : "Failed to send code");
-      } finally {
-        setAuthSubmitting(false);
-      }
-    };
-
-    const handleConfirmCode = async () => {
-      setAuthError("");
-      setAuthSubmitting(true);
-      try {
-        await confirmCode(authEmail, authCode);
-      } catch (e) {
-        setAuthError(e instanceof Error ? e.message : "Invalid code");
-      } finally {
-        setAuthSubmitting(false);
-      }
-    };
-
-    return (
-      <div className="start-screen">
-        <div className="start-content">
-          <h1>Claude Code Game</h1>
-          <p className="subtitle">
-            Sign in to track your progress on the leaderboard
-          </p>
-
-          <div className="input-group">
-            {authStep === "email" ? (
-              <>
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !authSubmitting && handleRequestCode()}
-                />
-                <button onClick={handleRequestCode} disabled={authSubmitting || !authEmail}>
-                  {authSubmitting ? "Sending..." : "Send Code"}
-                </button>
-              </>
-            ) : (
-              <>
-                <p style={{ color: "#888", fontSize: "0.875rem", margin: 0 }}>
-                  Code sent to {authEmail}
-                </p>
-                <input
-                  type="text"
-                  placeholder="Enter verification code"
-                  value={authCode}
-                  onChange={(e) => setAuthCode(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !authSubmitting && handleConfirmCode()}
-                />
-                <button onClick={handleConfirmCode} disabled={authSubmitting || !authCode}>
-                  {authSubmitting ? "Verifying..." : "Verify"}
-                </button>
-                <button
-                  onClick={() => { setAuthStep("email"); setAuthCode(""); setAuthError(""); }}
-                  style={{ background: "transparent", border: "1px solid #444", color: "#888" }}
-                >
-                  Back
-                </button>
-              </>
-            )}
-          </div>
-
-          {authError && <p className="error">{authError}</p>}
-
-          <p className="hint" style={{ marginTop: "1rem" }}>
-            <a href="#" onClick={(e) => { e.preventDefault(); startGame(0); }}>
-              Skip sign-in — just start building
-            </a>
-          </p>
         </div>
       </div>
     );
@@ -396,17 +288,6 @@ function App() {
           </div>
 
           {/* Advanced Track hidden for now */}
-
-          {auth.token && (
-            <p className="hint">
-              Signed in as {auth.email}{" "}
-              <a href="#" onClick={(e) => { e.preventDefault(); logout(); }}>
-                Sign out
-              </a>
-            </p>
-          )}
-
-          {auth.token && <Leaderboard />}
         </div>
       </div>
     );
@@ -569,7 +450,7 @@ function App() {
               <button onClick={nextLevel}>Next Lesson →</button>
             ) : (
               <button onClick={() => setSession(null)}>
-                Course Complete!
+                All Done!
               </button>
             )}
           </div>
