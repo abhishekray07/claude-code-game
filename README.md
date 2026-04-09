@@ -1,69 +1,52 @@
 # Claude Code Game
 
-An interactive terminal-based game that teaches Claude Code through hands-on practice in a sandboxed environment.
+An interactive course that teaches Claude Code through hands-on exercises. Run it locally — no Docker, no cloud sandboxes.
 
-## Architecture
+![Screenshot of Claude Code Game](docs/images/screenshot.png)
+<!-- TODO: capture screenshot showing lesson panel + terminal side by side -->
 
-- **Frontend**: React + Vite + xterm.js for terminal UI
-- **Backend**: Python/FastAPI for game logic and WebSocket terminal
-- **Sandbox**: Modal for isolated Claude Code environments (or local PTY for development)
-- **Verification**: Parses Claude's session logs (messages.jsonl) to verify level completion
-
-## Project Structure
-
-```
-├── backend/           # FastAPI backend
-│   └── app/
-│       ├── api/       # WebSocket terminal endpoint
-│       ├── models/    # Level and verification models
-│       └── services/  # Sandbox, verification, watcher services
-├── frontend/          # React + xterm.js frontend
-├── levels/
-│   ├── definitions/   # YAML level definitions
-│   └── starter-app/   # Todo app with intentional bug
-├── spike/             # Validation spikes for Modal/ttyd
-└── docs/plans/        # Implementation plans
-```
-
-## Development
-
-### Backend
+## Quick Start
 
 ```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+npx claude-code-game
 ```
 
-### Frontend
+Opens a local terminal UI in your browser with guided lessons, a real Claude Code session, and automatic verification when you complete each exercise.
+
+## What You'll Learn
+
+You'll build a working expense tracker app from scratch with Claude Code — no coding experience needed. Along the way, you'll learn the professional dev workflow in 6 steps:
+
+| Step | Topic | What You'll Learn |
+|------|-------|-------------------|
+| 1 | **Define & Plan** | Talk to Claude before coding — write requirements and a phased build plan with acceptance criteria |
+| 2 | **Build** | Let Claude implement from the plan — watch it read files, write code, and iterate |
+| 3 | **Verify** | Prove it works — have Claude write and run tests for your app |
+| 4 | **CLAUDE.md** | Teach Claude about your project so it works effectively every session |
+| 5 | **Review** | Ask Claude to review the code for bugs, edge cases, and improvements |
+| 6 | **Ship** | Commit your work with a clear, descriptive message |
+
+## How It Works
+
+The game runs a local Express server that spawns a bash PTY per session. Your browser connects via WebSocket and renders a real terminal with xterm.js. Each lesson copies starter files into a workspace and verifies completion automatically.
+
+```
+Browser (xterm.js) <-> WebSocket <-> Express server <-> node-pty (local bash)
+```
+
+## Contributing
 
 ```bash
-cd frontend
-npm install
-npm run dev
+# Dev servers (run in separate terminals)
+cd server && npm run dev        # Express + tsx watch
+cd frontend && npm run dev      # Vite dev server
+
+# Typecheck before committing
+cd server && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
-Open http://localhost:5173 to play.
-
-## Game Flow
-
-1. User enters API key and starts session
-2. Backend creates sandbox (Modal or local PTY)
-3. Frontend connects via WebSocket to terminal
-4. User interacts with Claude Code to complete level objectives
-5. Watcher polls messages.jsonl to detect completion
-6. Level advances when verification rules pass
-
-## Levels
-
-| # | Title | Objective |
-|---|-------|-----------|
-| 1 | Your First Conversation | Chat with Claude |
-| 2 | Reading Code | Have Claude read a file |
-| 3 | Fix a Bug | Have Claude edit a file |
-| 4 | Run Tests | Have Claude run tests |
+See [CLAUDE.md](./CLAUDE.md) for architecture details, lesson structure, and debugging tips.
 
 ## License
 
