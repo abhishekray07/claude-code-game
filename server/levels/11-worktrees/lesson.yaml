@@ -44,7 +44,7 @@ verification:
     pattern: "version"
 
 success: |
-  Congratulations! You've completed the Claude Code course!
+  Congratulations! You've completed all Claude Code lessons!
 
   You learned:
   1. Context is Everything - Context quality determines output
