@@ -375,10 +375,6 @@ sessionsRouter.get("/api/sessions/:sessionId/status", async (req: Request, res: 
   res.json({ completed: session.completed });
 });
 
-export function getSession(sessionId: string): Session | undefined {
-  return sessions.get(sessionId);
-}
-
 // WebSocket setup
 export function setupWebSocket(server: Server) {
   const wss = new WebSocketServer({ noServer: true });
