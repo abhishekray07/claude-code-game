@@ -1,5 +1,5 @@
 {
-  "name": "@opslane/claude-code-game",
+  "name": "@claude-code-camp/game",
   "version": "0.1.0",
   "type": "module",
   "bin": {
