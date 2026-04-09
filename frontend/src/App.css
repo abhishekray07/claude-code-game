@@ -477,35 +477,6 @@
   color: #f87171;
 }
 
-/* Leaderboard */
-.leaderboard {
-  margin-top: 2rem;
-  width: 100%;
-  max-width: 500px;
-}
-
-.leaderboard h3 {
-  margin-bottom: 0.5rem;
-}
-
-.leaderboard table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.leaderboard th,
-.leaderboard td {
-  padding: 0.4rem 0.8rem;
-  text-align: left;
-  border-bottom: 1px solid #333;
-}
-
-.leaderboard th {
-  color: #888;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-}
-
 /* Completion Message */
 .completion-message {
   margin-top: 16px;
