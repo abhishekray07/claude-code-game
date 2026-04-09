@@ -69,13 +69,15 @@ steps:
     name: "Build"
     subtitle: "Let Claude implement the plan"
     description: |
-      Now let Claude build from the plan. Give it clear
-      constraints so it stays focused.
+      Clear your context with /clear first — Claude will
+      re-read plan.md fresh and build from it.
 
       Watch Claude work — it reads files, edits code,
       and iterates. This is the core loop.
     guided_prompts:
-      - text: "Start building the expense tracker based on the plan. Use a single index.html file with inline CSS and JavaScript. No frameworks, no npm, no build tools. Use localStorage for persistence."
+      - text: "/clear"
+        label: "Clear context first"
+      - text: "Build the expense tracker based on plan.md"
         label: "Start building"
     verification:
       - type: file_exists
